@@ -491,3 +491,11 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
   font-size: 13px; border: 1px solid var(--border);
 }
 .donut-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+.donut-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
