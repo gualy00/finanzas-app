@@ -250,8 +250,9 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 .donut-section {
   position: relative; display: flex;
   justify-content: center; align-items: center;
-  margin: 4px auto; width: 200px; height: 120px;
+  margin: 4px auto; width: 200px; height: 90px;
   perspective: 600px;
+  overflow: hidden;
 }
 #donut-chart { 
   position: absolute; 
