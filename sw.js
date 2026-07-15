@@ -1,5 +1,11 @@
 const CACHE = 'finanzas-v1';
-const FILES = ['/', '/index.html', '/styles.css', '/app.js', '/manifest.json'];
+const FILES = [
+  '/finanzas-app/',
+  '/finanzas-app/index.html',
+  '/finanzas-app/styles.css',
+  '/finanzas-app/app.js',
+  '/finanzas-app/manifest.json'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
