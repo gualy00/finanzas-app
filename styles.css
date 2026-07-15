@@ -477,3 +477,14 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.donut-toggle-btns {
+  display: flex; justify-content: center; gap: 8px;
+  padding: 8px 16px 0;
+}
+.donut-btn {
+  padding: 6px 16px; border-radius: 20px;
+  background: var(--bg3); color: var(--text2);
+  font-size: 13px; border: 1px solid var(--border);
+}
+.donut-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
