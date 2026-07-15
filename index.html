@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>MisFinanzas</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="theme-dark">
+
+  <!-- PANTALLA: PIN -->
+  <div id="screen-pin" class="screen active">
+    <div class="pin-container">
+      <div class="app-logo">💰</div>
+      <h1 class="app-name">MisFinanzas</h1>
+      <p class="pin-label" id="pin-label">Ingresa tu PIN</p>
+      <div class="pin-dots" id="pin-dots">
+        <span class="dot"></span><span class="dot"></span>
+        <span class="dot"></span><span class="dot"></span>
+      </div>
+      <div class="pin-error" id="pin-error"></div>
+      <div class="numpad">
+        <button class="num-btn" data-num="1">1</button>
+        <button class="num-btn" data-num="2">2</button>
+        <button class="num-btn" data-num="3">3</button>
+        <button class="num-btn" data-num="4">4</button>
+        <button class="num-btn" data-num="5">5</button>
+        <button class="num-btn" data-num="6">6</button>
+        <button class="num-btn" data-num="7">7</button>
+        <button class="num-btn" data-num="8">8</button>
+        <button class="num-btn" data-num="9">9</button>
+        <button class="num-btn empty"></button>
+        <button class="num-btn" data-num="0">0</button>
+        <button class="num-btn delete-btn" id="pin-delete">⌫</button>
+      </div>
+      <button class="skip-pin-btn" id="skip-pin-btn">Configurar PIN después</button>
+    </div>
+  </div>
+
+  <!-- PANTALLA: SETUP INICIAL -->
+  <div id="screen-setup" class="screen">
+    <div class="setup-container">
+      <div class="setup-header">
+        <div class="app-logo">💰</div>
+        <h1>Bienvenido a MisFinanzas</h1>
+        <p>Configura tu app en unos pasos</p>
+      </div>
+
+      <div class="setup-steps" id="setup-steps">
+
+        <!-- PASO 1: Usuarios -->
+        <div class="setup-step active" id="step-1">
+          <h2>👥 Paso 1 — Usuarios</h2>
+          <div class="form-group">
+            <label>Nombre Usuario 1 (tú)</label>
+            <input type="text" id="user1-name" placeholder="Ej: Carlos" maxlength="20" />
+          </div>
+          <div class="form-group">
+            <label>Nombre Usuario 2 (opcional)</label>
+            <input type="text" id="user2-name" placeholder="Ej: María" maxlength="20" />
+          </div>
+          <button class="btn-primary" onclick="nextStep(2)">Siguiente →</button>
+        </div>
+
+        <!-- PASO 2: Perfiles -->
+        <div class="setup-step" id="step-2">
+          <h2>🗂️ Paso 2 — Perfiles / Negocios</h2>
+          <p class="step-desc">El perfil Personal ya está incluido. Agrega tus negocios.</p>
+          <div class="profile-list" id="profile-list">
+            <div class="profile-item fixed">
+              <span class="profile-icon">👤</span>
+              <span>Personal</span>
+              <span class="fixed-badge">Fijo</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <input type="text" id="new-profile-name" placeholder="Nombre del negocio (ej: Despacho)" maxlength="25" />
+          </div>
+          <button class="btn-secondary" onclick="addProfile()">+ Agregar negocio</button>
+          <button class="btn-primary" onclick="nextStep(3)">Siguiente →</button>
+        </div>
+
+        <!-- PASO 3: Cuentas -->
+        <div class="setup-step" id="step-3">
+          <h2>🏦 Paso 3 — Cuentas</h2>
+          <p class="step-desc">Edita o elimina las sugeridas. Agrega las tuyas.</p>
+          <div class="accounts-list" id="accounts-list"></div>
+          <div class="add-account-row">
+            <input type="text" id="new-account-name" placeholder="Nombre de cuenta" maxlength="25" />
+            <select id="new-account-currency">
+              <option value="MXN">MXN</option>
+              <option value="USD">USD</option>
+            </select>
+            <button class="btn-secondary small" onclick="addAccount()">+</button>
+          </div>
+          <button class="btn-primary" onclick="nextStep(4)">Siguiente →</button>
+        </div>
+
+        <!-- PASO 4: Categorías -->
+        <div class="setup-step" id="step-4">
+          <h2>🏷️ Paso 4 — Categorías</h2>
+          <p class="step-desc">Toca para editar el nombre. Desliza para eliminar.</p>
+          <div class="cat-tabs">
+            <button class="cat-tab active" onclick="showCatTab('gastos', this)">Gastos</button>
+            <button class="cat-tab" onclick="showCatTab('ingresos', this)">Ingresos</button>
+          </div>
+          <div id="cat-gastos" class="cat-list"></div>
+          <div id="cat-ingresos" class="cat-list hidden"></div>
+          <div class="add-cat-row">
+            <input type="text" id="new-cat-name" placeholder="Nueva categoría" maxlength="20" />
+            <button class="btn-secondary small" onclick="addCategory()">+</button>
+          </div>
+          <button class="btn-primary" onclick="nextStep(5)">Siguiente →</button>
+        </div>
+
+        <!-- PASO 5: PIN -->
+        <div class="setup-step" id="step-5">
+          <h2>🔒 Paso 5 — Seguridad</h2>
+          <p class="step-desc">Configura un PIN de 4 dígitos para proteger tu app.</p>
+          <div class="pin-dots setup-dots" id="setup-pin-dots">
+            <span class="dot"></span><span class="dot"></span>
+            <span class="dot"></span><span class="dot"></span>
+          </div>
+          <div class="numpad">
+            <button class="num-btn" data-num="1" onclick="setupPinInput(1)">1</button>
+            <button class="num-btn" data-num="2" onclick="setupPinInput(2)">2</button>
+            <button class="num-btn" data-num="3" onclick="setupPinInput(3)">3</button>
+            <button class="num-btn" data-num="4" onclick="setupPinInput(4)">4</button>
+            <button class="num-btn" data-num="5" onclick="setupPinInput(5)">5</button>
+            <button class="num-btn" data-num="6" onclick="setupPinInput(6)">6</button>
+            <button class="num-btn" data-num="7" onclick="setupPinInput(7)">7</button>
+            <button class="num-btn" data-num="8" onclick="setupPinInput(8)">8</button>
+            <button class="num-btn" data-num="9" onclick="setupPinInput(9)">9</button>
+            <button class="num-btn empty"></button>
+            <button class="num-btn" data-num="0" onclick="setupPinInput(0)">0</button>
+            <button class="num-btn delete-btn" onclick="setupPinDelete()">⌫</button>
+          </div>
+          <button class="btn-ghost" onclick="finishSetup()">Omitir por ahora</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA: PRINCIPAL -->
+  <div id="screen-main" class="screen">
+
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="header-top">
+        <button class="icon-btn" id="profile-selector-btn" onclick="toggleProfileMenu()">
+          <span id="current-profile-icon">👤</span>
+          <span id="current-profile-name">Personal</span>
+          <span class="chevron">▾</span>
+        </button>
+        <div class="header-actions">
+          <button class="icon-btn" onclick="showScreen('screen-search')">🔍</button>
+          <button class="icon-btn" onclick="showScreen('screen-settings')">⚙️</button>
+        </div>
+      </div>
+      <!-- MENÚ PERFILES -->
+      <div class="profile-menu hidden" id="profile-menu"></div>
+    </header>
+
+    <!-- TIPO DE CAMBIO -->
+    <div class="exchange-bar" id="exchange-bar">
+      <span class="exchange-label">USD/MXN:</span>
+      <span id="exchange-rate-display">17.50</span>
+      <button class="exchange-edit-btn" onclick="editExchangeRate()">✏️</button>
+    </div>
+
+    <!-- PERÍODO -->
+    <div class="period-selector">
+      <button class="period-btn active" onclick="setPeriod('today', this)">Hoy</button>
+      <button class="period-btn" onclick="setPeriod('week', this)">Semana</button>
+      <button class="period-btn" onclick="setPeriod('month', this)">Mes</button>
+      <button class="period-btn" onclick="setPeriod('custom', this)">Rango</button>
+    </div>
+
+    <!-- BALANCE -->
+    <div class="balance-card">
+      <div class="balance-item income">
+        <span class="balance-label">Ingresos</span>
+        <span class="balance-amount" id="total-income">$0.00</span>
+      </div>
+      <div class="balance-item expense">
+        <span class="balance-label">Gastos</span>
+        <span class="balance-amount" id="total-expense">$0.00</span>
+      </div>
+      <div class="balance-item diff">
+        <span class="balance-label">Diferencia</span>
+        <span class="balance-amount" id="total-diff">$0.00</span>
+      </div>
+    </div>
+
+    <!-- DONA -->
+    <div class="donut-section">
+      <canvas id="donut-chart" width="220" height="220"></canvas>
+      <div class="donut-center">
+        <span class="donut-total-label">Total</span>
+        <span class="donut-total" id="donut-total">$0</span>
+      </div>
+    </div>
+
+    <!-- LEYENDA CATEGORÍAS -->
+    <div class="cat-legend" id="cat-legend"></div>
+
+    <!-- MOVIMIENTOS RECIENTES -->
+    <div class="section-header">
+      <span>Movimientos recientes</span>
+      <button class="see-all-btn" onclick="showScreen('screen-transactions')">Ver todos</button>
+    </div>
+    <div class="transactions-list" id="recent-transactions"></div>
+
+    <!-- BOTONES PRINCIPALES -->
+    <div class="main-buttons">
+      <button class="btn-expense" onclick="openTransaction('gasto')">
+        <span class="btn-icon">−</span>
+        <span>Gasto</span>
+      </button>
+      <button class="btn-transfer" onclick="openTransaction('transferencia')">
+        <span class="btn-icon">⇄</span>
+        <span>Transferencia</span>
+      </button>
+      <button class="btn-income" onclick="openTransaction('ingreso')">
+        <span class="btn-icon">+</span>
+        <span>Ingreso</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- PANTALLA: NUEVA TRANSACCIÓN -->
+  <div id="screen-transaction" class="screen">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('screen-main')">← Volver</button>
+      <h2 id="transaction-title">Nuevo Gasto</h2>
+    </div>
+    <div class="transaction-form">
+
+      <!-- MONTO -->
+      <div class="amount-display">
+        <span class="currency-symbol" id="tx-currency-symbol">$</span>
+        <span class="amount-value" id="tx-amount-display">0</span>
+        <select class="currency-select" id="tx-currency" onchange="updateCurrencySymbol()">
+          <option value="MXN">MXN</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
+
+      <!-- TECLADO NUMÉRICO -->
+      <div class="amount-numpad">
+        <button onclick="amountInput('1')">1</button>
+        <button onclick="amountInput('2')">2</button>
+        <button onclick="amountInput('3')">3</button>
+        <button onclick="amountInput('4')">4</button>
+        <button onclick="amountInput('5')">5</button>
+        <button onclick="amountInput('6')">6</button>
+        <button onclick="amountInput('7')">7</button>
+        <button onclick="amountInput('8')">8</button>
+        <button onclick="amountInput('9')">9</button>
+        <button onclick="amountInput('.')">.</button>
+        <button onclick="amountInput('0')">0</button>
+        <button onclick="amountDelete()">⌫</button>
+      </div>
+
+      <!-- CATEGORÍA -->
+      <div class="form-section">
+        <label>Categoría</label>
+        <div class="cat-grid" id="tx-categories"></div>
+      </div>
+
+      <!-- CUENTA -->
+      <div class="form-section">
+        <label>Cuenta</label>
+        <div class="account-chips" id="tx-accounts"></div>
+      </div>
+
+      <!-- PERFIL -->
+      <div class="form-section">
+        <label>Perfil</label>
+        <div class="profile-chips" id="tx-profiles"></div>
+      </div>
+
+      <!-- FECHA -->
+      <div class="form-section">
+        <label>Fecha</label>
+        <input type="date" id="tx-date" class="date-input" />
+      </div>
+
+      <!-- NOTA -->
+      <div class="form-section">
+        <label>Nota (opcional)</label>
+        <input type="text" id="tx-note" placeholder="Agrega una nota..." maxlength="100" />
+      </div>
+
+      <!-- DEDUCIBLE -->
+      <div class="form-section toggle-row">
+        <label>Gasto deducible SAT</label>
+        <div class="toggle" id="tx-deducible-toggle" onclick="toggleDeducible()">
+          <div class="toggle-knob"></div>
+        </div>
+      </div>
+
+      <!-- REGISTRADO POR -->
+      <div class="form-section">
+        <label>Registrado por</label>
+        <div class="user-chips" id="tx-users"></div>
+      </div>
+
+      <button class="btn-primary save-btn" onclick="saveTransaction()">Guardar</button>
+    </div>
+  </div>
+
+  <!-- PANTALLA: TODOS LOS MOVIMIENTOS -->
+  <div id="screen-transactions" class="screen">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('screen-main')">← Volver</button>
+      <h2>Movimientos</h2>
+    </div>
+    <div class="filter-bar">
+      <select id="filter-profile" onchange="filterTransactions()">
+        <option value="all">Todos los perfiles</option>
+      </select>
+      <select id="filter-type" onchange="filterTransactions()">
+        <option value="all">Todos</option>
+        <option value="gasto">Gastos</option>
+        <option value="ingreso">Ingresos</option>
+        <option value="transferencia">Transferencias</option>
+      </select>
+    </div>
+    <div class="transactions-list full" id="all-transactions"></div>
+  </div>
+
+  <!-- PANTALLA: BÚSQUEDA -->
+  <div id="screen-search" class="screen">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('screen-main')">← Volver</button>
+      <h2>Buscar</h2>
+    </div>
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="Buscar por categoría, monto, nota..." oninput="searchTransactions()" />
+    </div>
+    <div class="transactions-list full" id="search-results"></div>
+  </div>
+
+  <!-- PANTALLA: CONFIGURACIÓN -->
+  <div id="screen-settings" class="screen">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('screen-main')">← Volver</button>
+      <h2>Configuración</h2>
+    </div>
+    <div class="settings-list">
+
+      <div class="settings-section">
+        <h3>Apariencia</h3>
+        <div class="setting-row">
+          <span>Modo</span>
+          <div class="theme-btns">
+            <button class="theme-btn" onclick="setTheme('light')">☀️ Claro</button>
+            <button class="theme-btn active" onclick="setTheme('dark')">🌙 Oscuro</button>
+            <button class="theme-btn" onclick="setTheme('auto')">🤖 Auto</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Tipo de cambio</h3>
+        <div class="setting-row">
+          <span>USD/MXN actual</span>
+          <div class="exchange-setting">
+            <input type="number" id="settings-exchange" step="0.01" min="1" />
+            <button class="btn-secondary small" onclick="saveExchangeRate()">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Seguridad</h3>
+        <div class="setting-row">
+          <span>Cambiar PIN</span>
+          <button class="btn-secondary small" onclick="showChangePIN()">Cambiar</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Datos</h3>
+        <div class="setting-row">
+          <span>Exportar transacciones</span>
+          <button class="btn-secondary small" onclick="exportCSV()">CSV</button>
+        </div>
+        <div class="setting-row danger">
+          <span>Borrar todos los datos</span>
+          <button class="btn-danger small" onclick="clearAllData()">Borrar</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: TIPO DE CAMBIO -->
+  <div id="modal-exchange" class="modal hidden">
+    <div class="modal-card">
+      <h3>Tipo de cambio USD/MXN</h3>
+      <input type="number" id="modal-exchange-input" step="0.01" min="1" placeholder="Ej: 17.50" />
+      <div class="modal-btns">
+        <button class="btn-ghost" onclick="closeModal('modal-exchange')">Cancelar</button>
+        <button class="btn-primary" onclick="saveExchangeRateModal()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
