@@ -405,8 +405,8 @@ function renderDonut() {
   const txs = getFilteredTx();
   const canvas = document.getElementById('donut-chart');
   const ctx = canvas.getContext('2d');
-  const size = 220; const cx = size/2; const cy = size/2;
-  const outer = 100; const inner = 55;
+  const size = 180; const cx = size/2; const cy = size/2;
+const outer = 80; const inner = 45;
   ctx.clearRect(0, 0, size, size);
 
   let entries = [];
