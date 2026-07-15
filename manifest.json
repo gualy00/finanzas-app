@@ -2,17 +2,10 @@
   "name": "MisFinanzas",
   "short_name": "Finanzas",
   "description": "Control de finanzas personales offline",
-  "start_url": "/finanzas-app/",
-  "scope": "/finanzas-app/",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#0f0f1a",
   "theme_color": "#6c63ff",
-  "orientation": "portrait",
-  "icons": [
-    {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236c63ff'/><text y='.9em' font-size='80' x='10'>💰</text></svg>",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
-    }
-  ]
+  "orientation": "portrait"
 }
