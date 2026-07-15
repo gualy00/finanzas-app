@@ -199,13 +199,18 @@
     </div>
 
     <!-- DONA -->
-    <div class="donut-section">
-      <canvas id="donut-chart" width="220" height="220"></canvas>
-      <div class="donut-center">
-        <span class="donut-total-label">Total</span>
-        <span class="donut-total" id="donut-total">$0</span>
-      </div>
-    </div>
+<div class="donut-toggle-btns">
+  <button class="donut-btn active" onclick="setDonutMode('balance', this)">Balance</button>
+  <button class="donut-btn" onclick="setDonutMode('gastos', this)">Gastos</button>
+  <button class="donut-btn" onclick="setDonutMode('ingresos', this)">Ingresos</button>
+</div>
+<div class="donut-section">
+  <canvas id="donut-chart" width="220" height="220"></canvas>
+  <div class="donut-center">
+    <span class="donut-total-label" id="donut-label">Balance</span>
+    <span class="donut-total" id="donut-total">$0</span>
+  </div>
+</div>
 
     <!-- LEYENDA CATEGORÍAS -->
     <div class="cat-legend" id="cat-legend"></div>
