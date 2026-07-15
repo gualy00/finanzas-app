@@ -394,62 +394,80 @@ function renderBalance() {
   diffEl.style.color = diff >= 0 ? 'var(--income)' : 'var(--expense)';
 }
 
+function setDonutMode(mode, btn) {
+  donutMode = mode;
+  document.querySelectorAll('.donut-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDonut();
+}
+
 function renderDonut() {
-  const txs = getFilteredTx().filter(tx => tx.type === 'gasto');
+  const txs = getFilteredTx();
   const canvas = document.getElementById('donut-chart');
   const ctx = canvas.getContext('2d');
   const size = 220; const cx = size/2; const cy = size/2;
-  const outer = 90; const inner = 58;
+  const outer = 100; const inner = 55;
   ctx.clearRect(0, 0, size, size);
 
-  // Agrupar por categoría
-  const catMap = {};
-  txs.forEach(tx => {
-    const key = tx.category || 'Otros';
-    catMap[key] = (catMap[key] || 0) + toMXN(tx.amount, tx.currency);
-  });
-  const entries = Object.entries(catMap).sort((a,b) => b[1]-a[1]);
-  const total = entries.reduce((s,[,v]) => s+v, 0);
+  let entries = [];
+  let total = 0;
+  let label = 'Balance';
+
+  if (donutMode === 'balance') {
+    const ingresos = txs.filter(t => t.type === 'ingreso').reduce((s,t) => s + toMXN(t.amount, t.currency), 0);
+    const gastos = txs.filter(t => t.type === 'gasto').reduce((s,t) => s + toMXN(t.amount, t.currency), 0);
+    entries = [['Ingresos', ingresos, '#4ade80'], ['Gastos', gastos, '#f87171']];
+    total = ingresos + gastos;
+    label = 'Balance';
+    document.getElementById('donut-total').textContent = formatMXN(ingresos - gastos);
+  } else {
+    const tipo = donutMode === 'gastos' ? 'gasto' : 'ingreso';
+    const catMap = {};
+    txs.filter(t => t.type === tipo).forEach(tx => {
+      const key = tx.category || 'Otros';
+      catMap[key] = (catMap[key] || 0) + toMXN(tx.amount, tx.currency);
+    });
+    const sorted = Object.entries(catMap).sort((a,b) => b[1]-a[1]);
+    entries = sorted.map(([cat, val], i) => [cat, val, CAT_COLORS[i % CAT_COLORS.length]]);
+    total = sorted.reduce((s,[,v]) => s+v, 0);
+    label = donutMode === 'gastos' ? 'Gastos' : 'Ingresos';
+    document.getElementById('donut-total').textContent = formatMXN(total);
+  }
+
+  document.getElementById('donut-label').textContent = label;
 
   if (total === 0) {
     ctx.beginPath();
     ctx.arc(cx, cy, outer, 0, Math.PI*2);
     ctx.arc(cx, cy, inner, 0, Math.PI*2, true);
-    ctx.fillStyle = 'var(--bg3)';
+    ctx.fillStyle = '#2a2a4a';
     ctx.fill();
-    document.getElementById('donut-total').textContent = '$0';
     document.getElementById('cat-legend').innerHTML = '';
     return;
   }
 
   let startAngle = -Math.PI / 2;
   const legend = [];
-  entries.forEach(([cat, val], i) => {
+  entries.forEach(([cat, val, color]) => {
+    if (val <= 0) return;
     const slice = (val / total) * Math.PI * 2;
-    const color = CAT_COLORS[i % CAT_COLORS.length];
     ctx.beginPath();
-    ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, outer, startAngle, startAngle + slice);
     ctx.arc(cx, cy, inner, startAngle + slice, startAngle, true);
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
-    // Gap
     ctx.beginPath();
     ctx.arc(cx, cy, outer+1, startAngle, startAngle + slice);
     ctx.arc(cx, cy, inner-1, startAngle + slice, startAngle, true);
-    ctx.strokeStyle = 'var(--bg)';
+    ctx.strokeStyle = '#0f0f1a';
     ctx.lineWidth = 2;
     ctx.stroke();
     startAngle += slice;
     legend.push({ cat, val, color, pct: Math.round(val/total*100) });
   });
 
-  document.getElementById('donut-total').textContent = formatMXN(total);
-
-  // Leyenda
-  const legendEl = document.getElementById('cat-legend');
-  legendEl.innerHTML = legend.slice(0,6).map(l =>
+  document.getElementById('cat-legend').innerHTML = legend.map(l =>
     `<div class="legend-item"><div class="legend-dot" style="background:${l.color}"></div><span>${l.cat} ${l.pct}%</span></div>`
   ).join('');
 }
@@ -481,7 +499,7 @@ function txHTML(tx) {
 }
 
 // ===== TRANSACTION FORM =====
-let currentTxType = 'gasto';
+let donutMode = 'balance';
 let currentAmountStr = '0';
 let selectedCategory = null;
 let selectedAccount = null;
