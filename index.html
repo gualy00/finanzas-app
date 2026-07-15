@@ -182,7 +182,7 @@
       <button class="period-btn" onclick="setPeriod('custom', this)">Rango</button>
     </div>
 
-    <!-- BALANCE -->
+   <!-- BALANCE -->
     <div class="balance-card">
       <div class="balance-item income">
         <span class="balance-label">Ingresos</span>
@@ -197,13 +197,13 @@
         <span class="balance-amount" id="total-diff">$0.00</span>
       </div>
     </div>
+    <div class="donut-toggle-btns">
+      <button class="donut-btn active" onclick="setDonutMode('balance', this)">Balance</button>
+      <button class="donut-btn" onclick="setDonutMode('gastos', this)">Gastos</button>
+      <button class="donut-btn" onclick="setDonutMode('ingresos', this)">Ingresos</button>
+    </div>
 
     <!-- DONA -->
-<div class="donut-toggle-btns">
-  <button class="donut-btn active" onclick="setDonutMode('balance', this)">Balance</button>
-  <button class="donut-btn" onclick="setDonutMode('gastos', this)">Gastos</button>
-  <button class="donut-btn" onclick="setDonutMode('ingresos', this)">Ingresos</button>
-</div>
 <div class="donut-section">
   <canvas id="donut-chart" width="220" height="220"></canvas>
   <div class="donut-center">
