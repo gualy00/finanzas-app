@@ -253,12 +253,12 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
   justify-content: center;
   align-items: center;
   margin: 0 auto;
-  width: 220px;
-  height: 220px;
+  width: 180px;
+  height: 180px;
 }
 #donut-chart {
-  width: 220px; 
-  height: 220px;
+  width: 180px; 
+  height: 180px;
   filter: drop-shadow(0 8px 16px rgba(0,0,0,0.4));
 }
 .donut-center {
