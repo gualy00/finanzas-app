@@ -409,7 +409,7 @@ function txHTML(tx){
     <div class="tx-right">
       <div class="tx-amount ${tx.type}">${sign}${tx.currency==='USD'?'USD ':' $'}${tx.amount.toFixed(2)}</div>
       <div class="tx-account">${tx.account||''}</div>
-      <button onclick="deleteTx(${tx.id})" style="background:none;border:none;color:var(--expense);font-size:16px;padding:4px;cursor:pointer">✕</button>
+      <button onclick="openTransaction('${tx.type}',${tx.id})" style="background:none;border:none;color:var(--accent);font-size:16px;padding:4px;cursor:pointer" title="Editar">✎</button> <button onclick="deleteTx(${tx.id})" style="background:none;border:none;color:var(--expense);font-size:16px;padding:4px;cursor:pointer" title="Eliminar">✕</button>
     </div>
   </div>`;
 }
@@ -424,20 +424,56 @@ function deleteTx(id){
   }
 }
 
-let currentTxType='gasto',currentAmountStr='0',selectedCategory=null,selectedAccount=null,selectedProfile=null,selectedUser=null,deducible=false;
+let currentTxType='gasto',currentAmountStr='0',selectedCategory=null,selectedAccount=null,selectedProfile=null,selectedUser=null,deducible=false; let editingTxId=null;
 
-function openTransaction(type){
-  currentTxType=type; currentAmountStr='0'; selectedCategory=null;
-  selectedAccount=state.accounts[0]?.name||null;
-  selectedProfile=state.currentProfile==='Todo'?state.profiles[0]:state.currentProfile;
-  selectedUser=state.users[0]; deducible=false;
-  document.getElementById('transaction-title').textContent=type==='gasto'?'Nuevo Gasto':type==='ingreso'?'Nuevo Ingreso':'Transferencia';
-  document.getElementById('tx-amount-display').textContent='0';
-  document.getElementById('tx-currency').value='MXN';
-  document.getElementById('tx-date').value=new Date().toISOString().split('T')[0];
-  document.getElementById('tx-note').value='';
-  document.getElementById('tx-deducible-toggle').classList.remove('active');
-  renderTxCategories(); renderTxAccounts(); renderTxProfiles(); renderTxUsers();
+function openTransaction(type, txId=null){
+  currentTxType=type;
+  editingTxId=txId;
+  selectedCategory=null;
+  deducible=false;
+
+  if(txId!==null){
+    const tx=state.transactions.find(t=>t.id===txId);
+    if(!tx){showToast('Transaccion no encontrada');return;}
+
+    currentAmountStr=String(tx.amount);
+    selectedAccount=tx.account||state.accounts[0]?.name||null;
+    selectedProfile=tx.profile||state.profiles[0]||null;
+    selectedUser=tx.user||state.users[0];
+    selectedCategory=tx.category==='Transferencia'?null:tx.category;
+    deducible=!!tx.deducible;
+
+    document.getElementById('transaction-title').textContent='Editar '+(
+      type==='gasto'?'Gasto':type==='ingreso'?'Ingreso':'Transferencia'
+    );
+    document.getElementById('tx-amount-display').textContent=currentAmountStr;
+    document.getElementById('tx-currency').value=tx.currency||'MXN';
+    document.getElementById('tx-date').value=tx.date||new Date().toISOString().split('T')[0];
+    document.getElementById('tx-note').value=tx.note||'';
+    document.getElementById('tx-deducible-toggle').classList.toggle('active',deducible);
+  }else{
+    currentAmountStr='0';
+    selectedCategory=null;
+    selectedAccount=state.accounts[0]?.name||null;
+    selectedProfile=state.currentProfile==='Todo'?state.profiles[0]:state.currentProfile;
+    selectedUser=state.users[0];
+    deducible=false;
+
+    document.getElementById('transaction-title').textContent=
+      type==='gasto'?'Nuevo Gasto':type==='ingreso'?'Nuevo Ingreso':'Transferencia';
+
+    document.getElementById('tx-amount-display').textContent='0';
+    document.getElementById('tx-currency').value='MXN';
+    document.getElementById('tx-date').value=new Date().toISOString().split('T')[0];
+    document.getElementById('tx-note').value='';
+    document.getElementById('tx-deducible-toggle').classList.remove('active');
+  }
+
+  updateCurrencySymbol();
+  renderTxCategories();
+  renderTxAccounts();
+  renderTxProfiles();
+  renderTxUsers();
   showScreen('screen-transaction');
 }
 function amountInput(c){
@@ -470,19 +506,63 @@ function selectUser(u){selectedUser=u;renderTxUsers();}
 function toggleDeducible(){deducible=!deducible;document.getElementById('tx-deducible-toggle').classList.toggle('active',deducible);}
 function saveTransaction(){
   const amount=parseFloat(currentAmountStr);
-  if(!amount||amount<=0){showToast('Ingresa un monto valido');return;}
-  if(currentTxType!=='transferencia'&&!selectedCategory){showToast('Selecciona una categoria');return;}
-  if(!selectedAccount){showToast('Selecciona una cuenta');return;}
-  state.transactions.push({
-    id:Date.now(),type:currentTxType,amount,
+
+  if(!amount||amount<=0){
+    showToast('Ingresa un monto valido');
+    return;
+  }
+
+  if(currentTxType!=='transferencia'&&!selectedCategory){
+    showToast('Selecciona una categoria');
+    return;
+  }
+
+  if(!selectedAccount){
+    showToast('Selecciona una cuenta');
+    return;
+  }
+
+  const data={
+    type:currentTxType,
+    amount,
     currency:document.getElementById('tx-currency').value,
     category:selectedCategory||'Transferencia',
-    account:selectedAccount,profile:selectedProfile,user:selectedUser,
+    account:selectedAccount,
+    profile:selectedProfile,
+    user:selectedUser,
     date:document.getElementById('tx-date').value,
     note:document.getElementById('tx-note').value.trim(),
-    deducible,synced:false
-  });
-  saveState(); showScreen('screen-main'); showToast('Guardado');
+    deducible,
+  };
+
+  if(editingTxId!==null){
+    const index=state.transactions.findIndex(t=>t.id===editingTxId);
+
+    if(index===-1){
+      showToast('Transaccion no encontrada');
+      return;
+    }
+
+    state.transactions[index]={
+      ...state.transactions[index],
+      ...data,
+      synced:false
+    };
+
+    showToast('Transaccion actualizada');
+  }else{
+    state.transactions.push({
+      id:Date.now(),
+      ...data,
+      synced:false
+    });
+
+    showToast('Guardado');
+  }
+
+  editingTxId=null;
+  saveState();
+  showScreen('screen-main');
 }
 
 function renderAllTransactions(){
