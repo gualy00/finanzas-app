@@ -1,4 +1,5 @@
 // ===== ESTADO GLOBAL =====
+let donutMode = 'balance';
 let state = {
   configured: false,
   pin: null,
@@ -405,21 +406,22 @@ function renderDonut() {
   const txs = getFilteredTx();
   const canvas = document.getElementById('donut-chart');
   const ctx = canvas.getContext('2d');
-  const size = 180; const cx = size/2; const cy = size/2;
-const outer = 80; const inner = 45;
+  const size = 200; const cx = size/2; const cy = size/2;
+  const outer = 88; const inner = 52;
   ctx.clearRect(0, 0, size, size);
 
   let entries = [];
   let total = 0;
-  let label = 'Balance';
+  let labelText = '';
+  let amountText = '';
 
   if (donutMode === 'balance') {
     const ingresos = txs.filter(t => t.type === 'ingreso').reduce((s,t) => s + toMXN(t.amount, t.currency), 0);
     const gastos = txs.filter(t => t.type === 'gasto').reduce((s,t) => s + toMXN(t.amount, t.currency), 0);
     entries = [['Ingresos', ingresos, '#4ade80'], ['Gastos', gastos, '#f87171']];
     total = ingresos + gastos;
-    label = 'Balance';
-    document.getElementById('donut-total').textContent = formatMXN(ingresos - gastos);
+    labelText = 'Balance';
+    amountText = formatMXN(ingresos - gastos);
   } else {
     const tipo = donutMode === 'gastos' ? 'gasto' : 'ingreso';
     const catMap = {};
@@ -430,22 +432,23 @@ const outer = 80; const inner = 45;
     const sorted = Object.entries(catMap).sort((a,b) => b[1]-a[1]);
     entries = sorted.map(([cat, val], i) => [cat, val, CAT_COLORS[i % CAT_COLORS.length]]);
     total = sorted.reduce((s,[,v]) => s+v, 0);
-    label = donutMode === 'gastos' ? 'Gastos' : 'Ingresos';
-    document.getElementById('donut-total').textContent = formatMXN(total);
+    labelText = donutMode === 'gastos' ? 'Gastos' : 'Ingresos';
+    amountText = formatMXN(total);
   }
 
-  document.getElementById('donut-label').textContent = label;
-
+  // Dibujar dona vacía si no hay datos
   if (total === 0) {
     ctx.beginPath();
     ctx.arc(cx, cy, outer, 0, Math.PI*2);
     ctx.arc(cx, cy, inner, 0, Math.PI*2, true);
     ctx.fillStyle = '#2a2a4a';
-    ctx.fill();
+    ctx.fill('evenodd');
+    drawDonutText(ctx, cx, cy, labelText, '$0');
     document.getElementById('cat-legend').innerHTML = '';
     return;
   }
 
+  // Dibujar segmentos
   let startAngle = -Math.PI / 2;
   const legend = [];
   entries.forEach(([cat, val, color]) => {
@@ -457,9 +460,10 @@ const outer = 80; const inner = 45;
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
+    // Separador
     ctx.beginPath();
-    ctx.arc(cx, cy, outer+1, startAngle, startAngle + slice);
-    ctx.arc(cx, cy, inner-1, startAngle + slice, startAngle, true);
+    ctx.arc(cx, cy, outer, startAngle, startAngle + slice);
+    ctx.arc(cx, cy, inner, startAngle + slice, startAngle, true);
     ctx.strokeStyle = '#0f0f1a';
     ctx.lineWidth = 2;
     ctx.stroke();
@@ -467,9 +471,26 @@ const outer = 80; const inner = 45;
     legend.push({ cat, val, color, pct: Math.round(val/total*100) });
   });
 
-  document.getElementById('cat-legend').innerHTML = legend.map(l =>
+  // Texto central dentro del canvas
+  drawDonutText(ctx, cx, cy, labelText, amountText);
+
+  // Leyenda
+  document.getElementById('cat-legend').innerHTML = legend.slice(0,6).map(l =>
     `<div class="legend-item"><div class="legend-dot" style="background:${l.color}"></div><span>${l.cat} ${l.pct}%</span></div>`
   ).join('');
+}
+
+function drawDonutText(ctx, cx, cy, label, amount) {
+  // Label pequeño arriba
+  ctx.fillStyle = '#9090b0';
+  ctx.font = '12px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, cx, cy - 10);
+  // Monto grande abajo
+  ctx.fillStyle = '#e8e8f0';
+  ctx.font = 'bold 16px -apple-system, sans-serif';
+  ctx.fillText(amount, cx, cy + 10);
 }
 
 function renderRecentTransactions() {
@@ -499,7 +520,7 @@ function txHTML(tx) {
 }
 
 // ===== TRANSACTION FORM =====
-let donutMode = 'balance';
+let currentTxType = 'gasto';
 let currentAmountStr = '0';
 let selectedCategory = null;
 let selectedAccount = null;
