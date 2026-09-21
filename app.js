@@ -418,6 +418,7 @@ function deleteTx(id){
   if(confirm('¿Eliminar esta transaccion?')){
     state.transactions=state.transactions.filter(t=>t.id!==id);
     saveState();
+    if(navigator.onLine && state.sheetsURL) syncToSheets();
     initMain();
     renderAllTransactions();
     showToast('Transaccion eliminada');
@@ -562,6 +563,7 @@ function saveTransaction(){
 
   editingTxId=null;
   saveState();
+  if(navigator.onLine && state.sheetsURL) syncToSheets();
   showScreen('screen-main');
 }
 
