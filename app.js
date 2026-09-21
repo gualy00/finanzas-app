@@ -42,7 +42,7 @@ function showScreen(id){
   if(id==='screen-main')initMain();
   if(id==='screen-transactions')renderAllTransactions();
   if(id==='screen-search')document.getElementById('search-input').focus();
-  if(id==='screen-settings')initSettings();
+  if(id==='screen-settings'){initSettings();updateTravelModeBtn();updatePendingCount();}
   if(id==='screen-budget')initBudget();
   if(id==='screen-recurring')initRecurring();
   if(id==='screen-add-recurring')initAddRecurring();
@@ -50,8 +50,7 @@ function showScreen(id){
   if(id==='screen-tdc-form'){}
   if(id==='screen-tdc-detail'){}
   if(id==='screen-charts')initCharts();
-  if(id==='screen-sync'){initSync();}
-  if(id==='screen-settings'){initSettings();updateTravelModeBtn();updatePendingCount();}
+  if(id==='screen-sync')initSync();
 }
 
 function applyTheme(t){
@@ -546,7 +545,6 @@ document.addEventListener('click',e=>{
   if(menu&&!menu.classList.contains('hidden')&&!menu.contains(e.target)&&!btn.contains(e.target))
     menu.classList.add('hidden');
 });
-
 // ===== FASE 2 =====
 
 // --- PRESUPUESTO ---
@@ -856,438 +854,9 @@ function runSimulator() {
 
 // ===== FASE 3 =====
 
-// Agregar casos al showScreen
-const _origShowScreen = showScreen;
-
-// Actualizar showScreen para Fase 3
-(function(){
-  const orig = showScreen;
-  window.showScreen = function(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    const el = document.getElementById(id);
-    if (el) el.classList.add('active');
-    if (id === 'screen-main') initMain();
-    if (id === 'screen-transactions') renderAllTransactions();
-    if (id === 'screen-search') document.getElementById('search-input').focus();
-    if (id === 'screen-settings') initSettings();
-    if (id === 'screen-budget') initBudget();
-    if (id === 'screen-recurring') initRecurring();
-    if (id === 'screen-add-recurring') initAddRecurring();
-    if (id === 'screen-tdc') initTDC();
-    if (id === 'screen-charts') initCharts();
-    if (id === 'screen-sheets') initSheets();
-  };
-})();
-
-// --- MODO VIAJE ---
-function toggleTravelMode() {
-  state.travelMode = !state.travelMode;
-  const toggle = document.getElementById('travel-mode-toggle');
-  if (toggle) toggle.classList.toggle('active', state.travelMode);
-  saveState();
-  updateTravelBar();
-  showToast(state.travelMode ? '✈️ Modo viaje activado' : 'Modo viaje desactivado');
-}
-
-function updateTravelBar() {
-  const bar = document.getElementById('travel-mode-bar');
-  if (bar) bar.classList.toggle('hidden', !state.travelMode);
-  const toggle = document.getElementById('travel-mode-toggle');
-  if (toggle) toggle.classList.toggle('active', !!state.travelMode);
-}
-
-// --- FOTO DE COMPROBANTE ---
-let currentPhotoData = null;
-
-function previewPhoto(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-  const reader = new FileReader();
-  reader.onload = e => {
-    currentPhotoData = e.target.result;
-    const preview = document.getElementById('tx-photo-preview');
-    if (preview) { preview.src = currentPhotoData; preview.style.display = 'block'; }
-  };
-  reader.readAsDataURL(file);
-}
-
-// --- NOTA DE VOZ ---
-let recognition = null;
-let isRecording = false;
-
-function toggleVoiceRecording() {
-  const btn = document.getElementById('voice-btn');
-  const status = document.getElementById('voice-status');
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    showToast('Tu navegador no soporta reconocimiento de voz');
-    return;
-  }
-  if (isRecording) {
-    if (recognition) recognition.stop();
-    isRecording = false;
-    btn.textContent = '🎤 Grabar nota';
-    btn.classList.remove('voice-btn-active');
-    if (status) status.textContent = '';
-    return;
-  }
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
-  recognition.lang = 'es-MX';
-  recognition.continuous = false;
-  recognition.interimResults = false;
-  recognition.onstart = () => {
-    isRecording = true;
-    btn.textContent = '⏹ Detener';
-    btn.classList.add('voice-btn-active');
-    if (status) status.textContent = 'Escuchando...';
-  };
-  recognition.onresult = e => {
-    const transcript = e.results[0][0].transcript;
-    const noteInput = document.getElementById('tx-note');
-    if (noteInput) noteInput.value = transcript;
-    if (status) status.textContent = 'Transcrito';
-  };
-  recognition.onerror = () => {
-    showToast('Error al grabar. Intenta de nuevo.');
-    isRecording = false;
-    btn.textContent = '🎤 Grabar nota';
-    btn.classList.remove('voice-btn-active');
-    if (status) status.textContent = '';
-  };
-  recognition.onend = () => {
-    isRecording = false;
-    btn.textContent = '🎤 Grabar nota';
-    btn.classList.remove('voice-btn-active');
-  };
-  recognition.start();
-}
-
-// Guardar foto con la transacción
-const _origSaveTransaction = saveTransaction;
-window.saveTransaction = function() {
-  // Agregar foto y modo viaje antes de guardar
-  const amount = parseFloat(currentAmountStr);
-  if (!amount || amount <= 0) { showToast('Ingresa un monto valido'); return; }
-  if (currentTxType !== 'transferencia' && !selectedCategory) { showToast('Selecciona una categoria'); return; }
-  if (!selectedAccount) { showToast('Selecciona una cuenta'); return; }
-
-  const note = document.getElementById('tx-note').value.trim();
-  const profile = state.travelMode ? (selectedProfile || state.profiles[0]) : (selectedProfile || state.profiles[0]);
-  const travelTag = state.travelMode ? ' [Viaje]' : '';
-
-  state.transactions.push({
-    id: Date.now(), type: currentTxType, amount,
-    currency: document.getElementById('tx-currency').value,
-    category: selectedCategory || 'Transferencia',
-    account: selectedAccount, profile: selectedProfile || state.profiles[0],
-    user: selectedUser || state.users[0],
-    date: document.getElementById('tx-date').value,
-    note: note + travelTag,
-    deducible, synced: false,
-    photo: currentPhotoData || null,
-    travelMode: !!state.travelMode,
-  });
-
-  currentPhotoData = null;
-  const preview = document.getElementById('tx-photo-preview');
-  if (preview) { preview.src = ''; preview.style.display = 'none'; }
-  const photoInput = document.getElementById('tx-photo');
-  if (photoInput) photoInput.value = '';
-
-  updateSyncBar();
-  saveState();
-  showScreen('screen-main');
-  showToast('Guardado');
-};
-
-function updateSyncBar() {
-  const pending = state.transactions.filter(t => !t.synced).length;
-  const bar = document.getElementById('sync-bar');
-  const count = document.getElementById('sync-pending-count');
-  if (bar) bar.classList.toggle('hidden', pending === 0);
-  if (count) count.textContent = pending;
-}
-
-// --- GRAFICAS ---
-function initCharts() {
-  const sel = document.getElementById('chart-profile-filter');
-  if (sel) {
-    sel.innerHTML = '<option value="all">Todos los perfiles</option>' +
-      state.profiles.map(p => `<option value="${p}">${p}</option>`).join('');
-  }
-  renderCharts();
-}
-
-function showChartTab(tab, btn) {
-  document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.chart-panel').forEach(p => p.classList.add('hidden'));
-  document.getElementById('chart-' + tab).classList.remove('hidden');
-  renderCharts();
-}
-
-function renderCharts() {
-  const profile = document.getElementById('chart-profile-filter')?.value || 'all';
-  const activeTab = document.querySelector('.chart-tab.active')?.getAttribute('onclick')?.match(/'(\w+)'/)?.[1] || 'monthly';
-  if (activeTab === 'monthly') renderMonthlyChart(profile);
-  else if (activeTab === 'evolution') renderEvolutionChart(profile);
-  else if (activeTab === 'compare') renderCompareChart(profile);
-}
-
-function getMonthlyData(profile) {
-  const now = new Date();
-  const months = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const label = d.toLocaleDateString('es-MX', { month: 'short' });
-    const txs = state.transactions.filter(tx => {
-      const td = new Date(tx.date);
-      const inProfile = profile === 'all' || tx.profile === profile;
-      return td.getMonth() === d.getMonth() && td.getFullYear() === d.getFullYear() && inProfile;
-    });
-    const income = txs.filter(t => t.type === 'ingreso').reduce((s, t) => s + toMXN(t.amount, t.currency), 0);
-    const expense = txs.filter(t => t.type === 'gasto').reduce((s, t) => s + toMXN(t.amount, t.currency), 0);
-    months.push({ label, income, expense, balance: income - expense });
-  }
-  return months;
-}
-
-function drawBarChart(canvasId, data, colors, labels) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const pad = { top: 20, right: 10, bottom: 30, left: 50 };
-  ctx.clearRect(0, 0, W, H);
-  const max = Math.max(...data.flat(), 1);
-  const chartW = W - pad.left - pad.right;
-  const chartH = H - pad.top - pad.bottom;
-  const isDark = document.body.classList.contains('theme-dark');
-  const textColor = isDark ? '#9090b0' : '#606080';
-  const gridColor = isDark ? '#2e2e50' : '#d0d0e8';
-  // Grid
-  ctx.strokeStyle = gridColor; ctx.lineWidth = 0.5;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad.top + (chartH / 4) * i;
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
-    ctx.fillStyle = textColor; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
-    ctx.fillText(fmt(max - (max / 4) * i).replace('$', '$'), pad.left - 4, y + 4);
-  }
-  // Barras
-  const groups = data[0].length;
-  const barCount = data.length;
-  const groupW = chartW / groups;
-  const barW = Math.min(groupW / (barCount + 1), 24);
-  data.forEach((series, si) => {
-    series.forEach((val, gi) => {
-      const x = pad.left + gi * groupW + (si + 0.5) * groupW / (barCount + 1);
-      const barH = (val / max) * chartH;
-      const y = pad.top + chartH - barH;
-      ctx.fillStyle = colors[si];
-      ctx.beginPath();
-      ctx.roundRect(x - barW / 2, y, barW, barH, 3);
-      ctx.fill();
-    });
-  });
-  // Labels eje X
-  ctx.fillStyle = textColor; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-  labels.forEach((lbl, i) => {
-    ctx.fillText(lbl, pad.left + i * groupW + groupW / 2, H - 8);
-  });
-}
-
-function drawLineChart(canvasId, data, color, labels) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const pad = { top: 20, right: 10, bottom: 30, left: 60 };
-  ctx.clearRect(0, 0, W, H);
-  const vals = data;
-  const max = Math.max(...vals.map(Math.abs), 1);
-  const min = Math.min(...vals, 0);
-  const range = max - min || 1;
-  const chartW = W - pad.left - pad.right;
-  const chartH = H - pad.top - pad.bottom;
-  const isDark = document.body.classList.contains('theme-dark');
-  const textColor = isDark ? '#9090b0' : '#606080';
-  const gridColor = isDark ? '#2e2e50' : '#d0d0e8';
-  // Grid
-  ctx.strokeStyle = gridColor; ctx.lineWidth = 0.5;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad.top + (chartH / 4) * i;
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
-    const val = max - (range / 4) * i;
-    ctx.fillStyle = textColor; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
-    ctx.fillText(fmt(val).replace('$','$'), pad.left - 4, y + 4);
-  }
-  // Línea
-  ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
-  ctx.beginPath();
-  vals.forEach((val, i) => {
-    const x = pad.left + (i / (vals.length - 1)) * chartW;
-    const y = pad.top + chartH - ((val - min) / range) * chartH;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  // Puntos
-  vals.forEach((val, i) => {
-    const x = pad.left + (i / (vals.length - 1)) * chartW;
-    const y = pad.top + chartH - ((val - min) / range) * chartH;
-    ctx.fillStyle = val >= 0 ? '#4ade80' : '#f87171';
-    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
-  });
-  // Labels
-  ctx.fillStyle = textColor; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-  labels.forEach((lbl, i) => {
-    const x = pad.left + (i / (vals.length - 1)) * chartW;
-    ctx.fillText(lbl, x, H - 8);
-  });
-}
-
-function renderMonthlyChart(profile) {
-  const months = getMonthlyData(profile);
-  const labels = months.map(m => m.label);
-  const income = months.map(m => m.income);
-  const expense = months.map(m => m.expense);
-  drawBarChart('canvas-monthly', [income, expense], ['#4ade80', '#f87171'], labels);
-  const leg = document.getElementById('legend-monthly');
-  if (leg) leg.innerHTML = `
-    <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div><span>Ingresos</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div><span>Gastos</span></div>
-  `;
-}
-
-function renderEvolutionChart(profile) {
-  const months = getMonthlyData(profile);
-  const labels = months.map(m => m.label);
-  const balances = months.map(m => m.balance);
-  drawLineChart('canvas-evolution', balances, '#6c63ff', labels);
-}
-
-function renderCompareChart(profile) {
-  const now = new Date();
-  const cats = state.categoriesGasto.slice(0, 7);
-  const getSpent = (monthOffset, cat) => {
-    const d = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-    return state.transactions.filter(tx => {
-      const td = new Date(tx.date);
-      const inProfile = profile === 'all' || tx.profile === profile;
-      return tx.type === 'gasto' && tx.category === cat.name &&
-        td.getMonth() === d.getMonth() && td.getFullYear() === d.getFullYear() && inProfile;
-    }).reduce((s, t) => s + toMXN(t.amount, t.currency), 0);
-  };
-  const current = cats.map(c => getSpent(0, c));
-  const previous = cats.map(c => getSpent(-1, c));
-  const labels = cats.map(c => c.name.slice(0, 6));
-  drawBarChart('canvas-compare', [previous, current], ['#9090b0', '#6c63ff'], labels);
-  const leg = document.getElementById('legend-compare');
-  if (leg) {
-    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toLocaleDateString('es-MX', { month: 'short' });
-    const curMonth = new Date().toLocaleDateString('es-MX', { month: 'short' });
-    leg.innerHTML = `
-      <div class="legend-item"><div class="legend-dot" style="background:#9090b0"></div><span>${prevMonth}</span></div>
-      <div class="legend-item"><div class="legend-dot" style="background:#6c63ff"></div><span>${curMonth}</span></div>
-    `;
-  }
-}
-
-// --- GOOGLE SHEETS ---
-function initSheets() {
-  const urlEl = document.getElementById('sheets-url');
-  if (urlEl) urlEl.value = state.sheetsURL || '';
-  const pending = state.transactions.filter(t => !t.synced).length;
-  const countEl = document.getElementById('pending-sync-count');
-  if (countEl) countEl.textContent = pending;
-  const lastEl = document.getElementById('last-sync-date');
-  if (lastEl) lastEl.textContent = state.lastSync ? new Date(state.lastSync).toLocaleString('es-MX') : 'Nunca';
-}
-
-function saveSheetURL() {
-  state.sheetsURL = document.getElementById('sheets-url').value.trim();
-  saveState(); showToast('URL guardada');
-}
-
-async function syncToSheets() {
-  if (!state.sheetsURL) { showToast('Primero configura la URL del script'); return; }
-  const pending = state.transactions.filter(t => !t.synced);
-  if (!pending.length) { showToast('Todo esta sincronizado'); return; }
-  showToast('Sincronizando...');
-  try {
-    const resp = await fetch(state.sheetsURL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transactions: pending.map(t => ({ ...t, photo: null })) })
-    });
-    if (resp.ok) {
-      pending.forEach(t => { const tx = state.transactions.find(x => x.id === t.id); if (tx) tx.synced = true; });
-      state.lastSync = Date.now();
-      saveState(); updateSyncBar();
-      showToast(`${pending.length} transacciones sincronizadas`);
-      initSheets();
-    } else { showToast('Error al sincronizar. Revisa la URL.'); }
-  } catch (e) { showToast('Sin conexion. Intenta de nuevo.'); }
-}
-
-function copyScriptCode() {
-  const code = `function doPost(e) {
-  try {
-    const data = JSON.parse(e.postData.contents);
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName('Transacciones');
-    if (!sheet) {
-      sheet = ss.insertSheet('Transacciones');
-      sheet.appendRow(['ID','Fecha','Tipo','Categoria','Monto','Moneda','Cuenta','Perfil','Usuario','Nota','Deducible']);
-    }
-    data.transactions.forEach(tx => {
-      sheet.appendRow([tx.id,tx.date,tx.type,tx.category,tx.amount,tx.currency,tx.account,tx.profile,tx.user,tx.note,tx.deducible?'Si':'No']);
-    });
-    return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
-  } catch(e) {
-    return ContentService.createTextOutput(JSON.stringify({error:e.toString()})).setMimeType(ContentService.MimeType.JSON);
-  }
-}`;
-  navigator.clipboard.writeText(code).then(() => showToast('Codigo copiado al portapapeles')).catch(() => showToast('No se pudo copiar. Usa Chrome.'));
-}
-
-// --- EXPORTAR PDF ---
-function exportPDF() {
-  const txs = state.transactions.slice().reverse();
-  const now = new Date().toLocaleDateString('es-MX');
-  const rows = txs.map(tx => `
-    <tr>
-      <td>${tx.date}</td><td>${tx.type}</td><td>${tx.category}</td>
-      <td>${tx.currency === 'USD' ? 'USD ' : '$'}${tx.amount.toFixed(2)}</td>
-      <td>${tx.account}</td><td>${tx.profile}</td>
-      <td>${tx.deducible ? 'Si' : ''}</td><td>${tx.note || ''}</td>
-    </tr>
-  `).join('');
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-    <title>MisFinanzas - Reporte ${now}</title>
-    <style>body{font-family:sans-serif;padding:20px}h1{font-size:18px}table{width:100%;border-collapse:collapse;font-size:12px}
-    th{background:#1a1a2e;color:white;padding:6px;text-align:left}td{padding:5px;border-bottom:1px solid #eee}
-    .income{color:green}.expense{color:red}</style></head>
-    <body><h1>MisFinanzas — Reporte ${now}</h1>
-    <table><thead><tr><th>Fecha</th><th>Tipo</th><th>Categoria</th><th>Monto</th><th>Cuenta</th><th>Perfil</th><th>Deducible</th><th>Nota</th></tr></thead>
-    <tbody>${rows}</tbody></table></body></html>`;
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = `mis_finanzas_${now}.html`; a.click();
-  URL.revokeObjectURL(url);
-  showToast('Reporte descargado. Abrelo y usa Imprimir > Guardar PDF');
-}
-
-// Inicializar modo viaje y sync al cargar
-const _fase3Init = initMain;
-window.initMain = function() {
-  _fase3Init();
-  updateTravelBar();
-  updateSyncBar();
-};
 
 // ===== FASE 3 =====
 
-// Agregar casos al showScreen
 // --- MODO VIAJE ---
 function toggleTravelMode() {
   state.travelMode = !state.travelMode;
@@ -1336,8 +905,7 @@ function getMonthTxs(year, month, profile, type) {
   return state.transactions.filter(tx => {
     const d = new Date(tx.date);
     return d.getFullYear() === year && d.getMonth() === month &&
-      tx.type === type &&
-      (profile === 'all' || tx.profile === profile);
+      tx.type === type && (profile === 'all' || tx.profile === profile);
   });
 }
 
@@ -1353,17 +921,14 @@ function renderTrend() {
     months.push({ year: d.getFullYear(), month: d.getMonth(), label: d.toLocaleDateString('es-MX', { month: 'short' }) });
   }
   const values = months.map(m => {
-    const txs = getMonthTxs(m.year, m.month, profile, type);
-    return txs.reduce((s, t) => s + toMXN(t.amount, t.currency), 0);
+    return getMonthTxs(m.year, m.month, profile, type).reduce((s, t) => s + toMXN(t.amount, t.currency), 0);
   });
   const max = Math.max(...values, 1);
   const colorClass = type === 'gasto' ? 'bar-fill-expense' : 'bar-fill-income';
   container.innerHTML = months.map((m, i) => `
     <div class="bar-row">
       <span class="bar-label">${m.label}</span>
-      <div class="bar-track">
-        <div class="bar-fill ${colorClass}" style="width:${Math.round(values[i]/max*100)}%"></div>
-      </div>
+      <div class="bar-track"><div class="bar-fill ${colorClass}" style="width:${Math.round(values[i]/max*100)}%"></div></div>
       <span class="bar-value">${values[i] > 0 ? fmt(values[i]) : '—'}</span>
     </div>
   `).join('');
@@ -1395,21 +960,17 @@ function renderEvolution() {
   ctx.clearRect(0, 0, W, H);
   const max = Math.max(...balances.map(Math.abs), 1);
   const midY = H / 2;
-  // Eje central
   ctx.strokeStyle = '#2e2e50'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(pad, midY); ctx.lineTo(W - pad, midY); ctx.stroke();
-  // Línea
-  const stepX = (W - pad * 2) / (balances.length - 1);
   ctx.beginPath();
   balances.forEach((v, i) => {
-    const x = pad + i * stepX;
+    const x = pad + i * (W - pad * 2) / (balances.length - 1);
     const y = midY - (v / max) * (H / 2 - 20);
     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
   ctx.strokeStyle = '#6c63ff'; ctx.lineWidth = 2.5; ctx.stroke();
-  // Puntos y etiquetas
   balances.forEach((v, i) => {
-    const x = pad + i * stepX;
+    const x = pad + i * (W - pad * 2) / (balances.length - 1);
     const y = midY - (v / max) * (H / 2 - 20);
     ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2);
     ctx.fillStyle = v >= 0 ? '#4ade80' : '#f87171'; ctx.fill();
@@ -1445,9 +1006,7 @@ function renderCompare() {
   container.innerHTML = months.map((m, i) => `
     <div class="bar-row">
       <span class="bar-label">${m.label}</span>
-      <div class="bar-track">
-        <div class="bar-fill bar-fill-expense" style="width:${Math.round(values[i]/max*100)}%"></div>
-      </div>
+      <div class="bar-track"><div class="bar-fill bar-fill-expense" style="width:${Math.round(values[i]/max*100)}%"></div></div>
       <span class="bar-value">${values[i] > 0 ? fmt(values[i]) : '—'}</span>
     </div>
   `).join('');
@@ -1457,56 +1016,17 @@ function renderCompare() {
 function exportPDF() {
   const now = new Date();
   const profile = state.currentProfile;
-  const txs = state.transactions.filter(tx =>
-    profile === 'Todo' || tx.profile === profile
-  ).slice().reverse();
-
+  const txs = state.transactions.filter(tx => profile === 'Todo' || tx.profile === profile).slice().reverse();
   const income = txs.filter(t => t.type === 'ingreso').reduce((s, t) => s + toMXN(t.amount, t.currency), 0);
   const expense = txs.filter(t => t.type === 'gasto').reduce((s, t) => s + toMXN(t.amount, t.currency), 0);
-
-  const rows = txs.map(tx => `
-    <tr>
-      <td>${tx.date}</td>
-      <td>${tx.type}</td>
-      <td>${tx.category || ''}</td>
-      <td style="text-align:right;color:${tx.type==='gasto'?'#c0392b':'#27ae60'}">${tx.currency === 'USD' ? 'USD ' : '$'}${tx.amount.toFixed(2)}</td>
-      <td>${tx.account || ''}</td>
-      <td>${tx.profile || ''}</td>
-      <td>${tx.note || ''}</td>
-    </tr>
-  `).join('');
-
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <title>MisFinanzas - Reporte</title>
-  <style>
-    body{font-family:Arial,sans-serif;padding:20px;font-size:12px}
-    h1{color:#6c63ff;margin-bottom:4px}
-    .summary{display:flex;gap:20px;margin:16px 0;padding:12px;background:#f5f5f5;border-radius:8px}
-    .sum-item{flex:1;text-align:center}
-    .sum-label{font-size:11px;color:#666}
-    .sum-value{font-size:16px;font-weight:bold;margin-top:4px}
-    table{width:100%;border-collapse:collapse;margin-top:16px}
-    th{background:#6c63ff;color:white;padding:8px;text-align:left;font-size:11px}
-    td{padding:6px 8px;border-bottom:1px solid #eee;font-size:11px}
-    tr:nth-child(even){background:#f9f9f9}
-  </style></head><body>
-  <h1>MisFinanzas</h1>
-  <p>Reporte generado: ${now.toLocaleDateString('es-MX')} | Perfil: ${profile}</p>
-  <div class="summary">
-    <div class="sum-item"><div class="sum-label">Ingresos</div><div class="sum-value" style="color:#27ae60">${fmt(income)}</div></div>
-    <div class="sum-item"><div class="sum-label">Gastos</div><div class="sum-value" style="color:#c0392b">${fmt(expense)}</div></div>
-    <div class="sum-item"><div class="sum-label">Diferencia</div><div class="sum-value" style="color:${income-expense>=0?'#27ae60':'#c0392b'}">${(income-expense<0?'-':'')+fmt(income-expense)}</div></div>
-  </div>
-  <table><thead><tr><th>Fecha</th><th>Tipo</th><th>Categoria</th><th>Monto</th><th>Cuenta</th><th>Perfil</th><th>Nota</th></tr></thead>
-  <tbody>${rows}</tbody></table>
-  </body></html>`;
-
+  const rows = txs.map(tx => `<tr><td>${tx.date}</td><td>${tx.type}</td><td>${tx.category||''}</td><td style="text-align:right;color:${tx.type==='gasto'?'#c0392b':'#27ae60'}">${tx.currency==='USD'?'USD ':'$'}${tx.amount.toFixed(2)}</td><td>${tx.account||''}</td><td>${tx.profile||''}</td><td>${tx.note||''}</td></tr>`).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>MisFinanzas</title><style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px}h1{color:#6c63ff}.summary{display:flex;gap:20px;margin:16px 0;padding:12px;background:#f5f5f5;border-radius:8px}.sum-item{flex:1;text-align:center}.sum-label{font-size:11px;color:#666}.sum-value{font-size:16px;font-weight:bold;margin-top:4px}table{width:100%;border-collapse:collapse;margin-top:16px}th{background:#6c63ff;color:white;padding:8px;text-align:left;font-size:11px}td{padding:6px 8px;border-bottom:1px solid #eee;font-size:11px}tr:nth-child(even){background:#f9f9f9}</style></head><body><h1>MisFinanzas</h1><p>Reporte: ${now.toLocaleDateString('es-MX')} | Perfil: ${profile}</p><div class="summary"><div class="sum-item"><div class="sum-label">Ingresos</div><div class="sum-value" style="color:#27ae60">${fmt(income)}</div></div><div class="sum-item"><div class="sum-label">Gastos</div><div class="sum-value" style="color:#c0392b">${fmt(expense)}</div></div><div class="sum-item"><div class="sum-label">Diferencia</div><div class="sum-value" style="color:${income-expense>=0?'#27ae60':'#c0392b'}">${(income-expense<0?'-':'')+fmt(income-expense)}</div></div></div><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Categoria</th><th>Monto</th><th>Cuenta</th><th>Perfil</th><th>Nota</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `reporte_finanzas_${now.toISOString().split('T')[0]}.html`;
+  a.href = url; a.download = `reporte_${now.toISOString().split('T')[0]}.html`;
   a.click(); URL.revokeObjectURL(url);
-  showToast('Reporte descargado — abrelo en Chrome para imprimir como PDF');
+  showToast('Reporte descargado');
 }
 
 // --- SINCRONIZACIÓN SHEETS ---
@@ -1518,9 +1038,11 @@ function initSync() {
 
 function saveSheetURL() {
   const url = document.getElementById('sheets-url').value.trim();
+  if (!url) { showToast('Ingresa una URL'); return; }
   state.sheetsURL = url;
   saveState();
-  showToast('URL guardada');
+  showToast('URL guardada ✓');
+  updatePendingCount();
 }
 
 function updatePendingCount() {
@@ -1531,33 +1053,34 @@ function updatePendingCount() {
 }
 
 async function syncToSheets() {
-  if (!state.sheetsURL) { showToast('Primero guarda la URL de tu Apps Script'); return; }
-  // Marcar todas como pendientes para sincronizar todas
-  state.transactions = state.transactions.map(t => ({ ...t, synced: false }));
+  const urlEl = document.getElementById('sheets-url');
+  const url = (urlEl && urlEl.value.trim()) || state.sheetsURL;
+  if (!url) { showToast('Primero guarda la URL del Apps Script'); return; }
+  state.sheetsURL = url;
   saveState();
-  const pending = state.transactions;
-  if (!pending.length) { showToast('No hay transacciones para sincronizar'); return; }
   const statusEl = document.getElementById('sync-status');
-  if (statusEl) statusEl.textContent = 'Sincronizando...';
+  const allTxs = state.transactions;
+  if (!allTxs.length) { showToast('No hay transacciones para sincronizar'); return; }
+  if (statusEl) statusEl.textContent = 'Enviando...';
   try {
-    const res = await fetch(state.sheetsURL, {
+    await fetch(url, {
       method: 'POST',
       mode: 'no-cors',
-      body: JSON.stringify({ transactions: pending }),
+      body: JSON.stringify({ transactions: allTxs }),
       headers: { 'Content-Type': 'application/json' }
     });
     state.transactions = state.transactions.map(t => ({ ...t, synced: true }));
     saveState();
     updatePendingCount();
-    if (statusEl) statusEl.textContent = pending.length + ' transacciones enviadas a Sheets';
-    showToast('Sincronizacion enviada');
+    if (statusEl) statusEl.textContent = allTxs.length + ' transacciones enviadas';
+    showToast('Sincronizacion enviada ✓');
   } catch (e) {
-    if (statusEl) statusEl.textContent = 'Error de conexion. Verifica tu internet.';
+    if (statusEl) statusEl.textContent = 'Error de conexion';
     showToast('Error de conexion');
   }
 }
 
-// Nota de voz con Web Speech API
+// --- NOTA DE VOZ ---
 function startVoiceNote(targetInputId) {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     showToast('Tu navegador no soporta nota de voz');
@@ -1574,7 +1097,7 @@ function startVoiceNote(targetInputId) {
     const text = e.results[0][0].transcript;
     const input = document.getElementById(targetInputId);
     if (input) input.value = text;
-    showToast('Nota transcrita');
+    showToast('Nota transcrita ✓');
   };
   recognition.onerror = () => showToast('No se pudo transcribir');
 }
