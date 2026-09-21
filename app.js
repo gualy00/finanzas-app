@@ -381,7 +381,7 @@ function renderAccountsBar(){
   state.accounts.forEach(a=>{
     const btn=document.createElement('button');
     btn.className='account-chip-btn'+(selectedAccountFilter===a.name?' active':'');
-    btn.textContent=`${a.name} ${a.currency}`;
+    btn.textContent=a.name;
     btn.onclick=()=>{selectedAccountFilter=a.name;renderAccountsBar();renderBalance();renderDonut();renderRecentTransactions();};
     bar.appendChild(btn);
   });
