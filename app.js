@@ -33,8 +33,29 @@ document.addEventListener('DOMContentLoaded',()=>{
   loadState(); applyTheme(state.theme);
   if(!state.configured){initSetup();showScreen('screen-setup');}
   else if(state.pin){showScreen('screen-pin');initPinScreen();}
-  else{showScreen('screen-main');initMain();}
+  else{
+    showScreen('screen-main');initMain();
+    if(state.transactions.length===0 && state.sheetsURL && navigator.onLine){
+      loadFromSheets();
+    }
+  }
 });
+
+async function loadFromSheets(){
+  try{
+    showToast('Cargando datos desde Sheets...');
+    const res = await fetch(state.sheetsURL);
+    const data = await res.json();
+    if(data.ok && data.transactions.length > 0){
+      state.transactions = data.transactions;
+      saveState();
+      initMain();
+      showToast('Datos cargados desde Sheets ✓');
+    }
+  }catch(e){
+    showToast('No se pudo cargar desde Sheets');
+  }
+}
 
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
