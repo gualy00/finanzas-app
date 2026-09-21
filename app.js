@@ -409,8 +409,19 @@ function txHTML(tx){
     <div class="tx-right">
       <div class="tx-amount ${tx.type}">${sign}${tx.currency==='USD'?'USD ':' $'}${tx.amount.toFixed(2)}</div>
       <div class="tx-account">${tx.account||''}</div>
+      <button onclick="deleteTx(${tx.id})" style="background:none;border:none;color:var(--expense);font-size:16px;padding:4px;cursor:pointer">✕</button>
     </div>
   </div>`;
+}
+
+function deleteTx(id){
+  if(confirm('¿Eliminar esta transaccion?')){
+    state.transactions=state.transactions.filter(t=>t.id!==id);
+    saveState();
+    initMain();
+    renderAllTransactions();
+    showToast('Transaccion eliminada');
+  }
 }
 
 let currentTxType='gasto',currentAmountStr='0',selectedCategory=null,selectedAccount=null,selectedProfile=null,selectedUser=null,deducible=false;
