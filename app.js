@@ -43,6 +43,10 @@ function showScreen(id){
   if(id==='screen-transactions')renderAllTransactions();
   if(id==='screen-search')document.getElementById('search-input').focus();
   if(id==='screen-settings')initSettings();
+  if(id==='screen-budget')initBudget();
+  if(id==='screen-recurring')initRecurring();
+  if(id==='screen-add-recurring')initAddRecurring();
+  if(id==='screen-tdc')initTDC();
 }
 
 function applyTheme(t){
@@ -537,3 +541,310 @@ document.addEventListener('click',e=>{
   if(menu&&!menu.classList.contains('hidden')&&!menu.contains(e.target)&&!btn.contains(e.target))
     menu.classList.add('hidden');
 });
+
+// ===== FASE 2 =====
+
+// --- PRESUPUESTO ---
+function initBudget() {
+  const dailyEl = document.getElementById('daily-limit-input');
+  if (dailyEl) dailyEl.value = state.dailyLimit || '';
+  renderBudgetCategories();
+}
+
+function saveDailyLimit() {
+  const v = parseFloat(document.getElementById('daily-limit-input').value);
+  state.dailyLimit = v > 0 ? v : 0;
+  saveState(); showToast('Limite diario guardado');
+}
+
+function renderBudgetCategories() {
+  const list = document.getElementById('budget-categories-list');
+  if (!list) return;
+  const now = new Date();
+  const txs = state.transactions.filter(tx => {
+    const d = new Date(tx.date);
+    return tx.type === 'gasto' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  list.innerHTML = state.categoriesGasto.map((cat, i) => {
+    const spent = txs.filter(t => t.category === cat.name).reduce((s, t) => s + toMXN(t.amount, t.currency), 0);
+    const limit = (state.budgets && state.budgets[cat.name]) || 0;
+    const pct = limit > 0 ? Math.min(Math.round(spent / limit * 100), 100) : 0;
+    const color = pct >= 100 ? 'progress-red' : pct >= 80 ? 'progress-yellow' : 'progress-green';
+    return `
+      <div class="budget-cat-row">
+        <span>${cat.emoji} ${cat.name}</span>
+        <input type="number" min="0" step="100" placeholder="Sin limite"
+          value="${limit || ''}"
+          onchange="saveBudget('${cat.name}', this.value)" />
+      </div>
+      ${limit > 0 ? `
+        <div class="budget-progress-bar"><div class="budget-progress-fill ${color}" style="width:${pct}%"></div></div>
+        <div class="budget-pct">${fmt(spent)} de ${fmt(limit)} (${pct}%)</div>
+      ` : ''}
+    `;
+  }).join('');
+}
+
+function saveBudget(catName, value) {
+  if (!state.budgets) state.budgets = {};
+  const v = parseFloat(value);
+  state.budgets[catName] = v > 0 ? v : 0;
+  saveState();
+  renderBudgetCategories();
+  checkBudgetAlerts();
+}
+
+function checkBudgetAlerts() {
+  if (!state.budgets) return;
+  const now = new Date();
+  const txs = state.transactions.filter(tx => {
+    const d = new Date(tx.date);
+    return tx.type === 'gasto' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  Object.entries(state.budgets).forEach(([cat, limit]) => {
+    if (!limit) return;
+    const spent = txs.filter(t => t.category === cat).reduce((s, t) => s + toMXN(t.amount, t.currency), 0);
+    const pct = spent / limit * 100;
+    if (pct >= 100) showToast(`⚠️ ${cat}: superaste el presupuesto`);
+    else if (pct >= 80) showToast(`⚠️ ${cat}: 80% del presupuesto usado`);
+  });
+}
+
+// --- GASTOS RECURRENTES ---
+function initRecurring() {
+  renderRecurringList();
+}
+
+function renderRecurringList() {
+  const list = document.getElementById('recurring-list');
+  if (!list) return;
+  const items = state.recurring || [];
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state"><span class="empty-icon">🔄</span>Sin gastos recurrentes.<br>Agrega uno con el boton de arriba.</div>';
+    return;
+  }
+  const freqLabel = { daily: 'Diario', weekly: 'Semanal', monthly: 'Mensual', annual: 'Anual' };
+  list.innerHTML = items.map((r, i) => `
+    <div class="recurring-item">
+      <div class="recurring-item-info">
+        <div class="recurring-item-name">${r.name}</div>
+        <div class="recurring-item-meta">${r.category} · ${r.account} · ${r.profile}</div>
+        ${r.day ? `<div class="recurring-item-meta">Dia ${r.day} de cada mes</div>` : ''}
+      </div>
+      <div>
+        <div class="recurring-item-amount">-${r.currency === 'USD' ? 'USD ' : '$'}${parseFloat(r.amount).toFixed(2)}</div>
+        <div class="recurring-item-freq">${freqLabel[r.frequency] || r.frequency}</div>
+        <button class="btn-delete" onclick="deleteRecurring(${i})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function initAddRecurring() {
+  const catSel = document.getElementById('rec-category');
+  const accSel = document.getElementById('rec-account');
+  const profSel = document.getElementById('rec-profile');
+  if (catSel) catSel.innerHTML = state.categoriesGasto.map(c => `<option value="${c.name}">${c.emoji} ${c.name}</option>`).join('');
+  if (accSel) accSel.innerHTML = state.accounts.map(a => `<option value="${a.name}">${a.name} ${a.currency}</option>`).join('');
+  if (profSel) profSel.innerHTML = state.profiles.map(p => `<option value="${p}">${p}</option>`).join('');
+  document.getElementById('rec-name').value = '';
+  document.getElementById('rec-amount').value = '';
+  document.getElementById('rec-day').value = '';
+}
+
+function saveRecurring() {
+  const name = document.getElementById('rec-name').value.trim();
+  const amount = parseFloat(document.getElementById('rec-amount').value);
+  if (!name) { showToast('Ingresa un nombre'); return; }
+  if (!amount || amount <= 0) { showToast('Ingresa un monto valido'); return; }
+  if (!state.recurring) state.recurring = [];
+  state.recurring.push({
+    name,
+    amount,
+    currency: document.getElementById('rec-currency').value,
+    category: document.getElementById('rec-category').value,
+    account: document.getElementById('rec-account').value,
+    frequency: document.getElementById('rec-frequency').value,
+    day: parseInt(document.getElementById('rec-day').value) || null,
+    profile: document.getElementById('rec-profile').value,
+  });
+  saveState();
+  showToast('Recurrente guardado');
+  showScreen('screen-recurring');
+}
+
+function deleteRecurring(i) {
+  if (confirm('Eliminar este gasto recurrente?')) {
+    state.recurring.splice(i, 1);
+    saveState(); renderRecurringList();
+  }
+}
+
+// --- TDC ---
+let editingTDCIndex = -1;
+
+function initTDC() {
+  renderTDCList();
+}
+
+function renderTDCList() {
+  const list = document.getElementById('tdc-list');
+  if (!list) return;
+  const cards = state.tdcCards || [];
+  if (!cards.length) {
+    list.innerHTML = '<div class="empty-state"><span class="empty-icon">💳</span>Sin tarjetas de credito.<br>Agrega una con el boton de arriba.</div>';
+    return;
+  }
+  list.innerHTML = cards.map((c, i) => {
+    const vars = c.vars || {};
+    const balance = vars.balance || 0;
+    const used = limit => limit > 0 ? Math.round(balance / limit * 100) : 0;
+    return `
+      <div class="tdc-card">
+        <div class="tdc-card-header">
+          <span class="tdc-card-bank">💳 ${c.bank}</span>
+          <span class="tdc-card-limit">${c.currency} ${c.limit ? fmt(c.limit) : '—'}</span>
+        </div>
+        <div class="tdc-card-dates">
+          <div class="tdc-date-item"><strong>Dia ${c.cutDay || '—'}</strong>Corte</div>
+          <div class="tdc-date-item"><strong>Dia ${c.payDay || '—'}</strong>Pago</div>
+          <div class="tdc-date-item"><strong>${c.cat || '—'}%</strong>CAT anual</div>
+        </div>
+        ${balance > 0 ? `<div class="tdc-card-dates"><div class="tdc-date-item"><strong style="color:var(--expense)">${fmt(balance)}</strong>Saldo actual</div></div>` : ''}
+        <div class="tdc-card-actions">
+          <button class="btn-tdc-action" onclick="openTDCDetail(${i})">Ver detalle</button>
+          <button class="btn-tdc-action" onclick="editTDC(${i})">Editar</button>
+          <button class="btn-tdc-action" style="color:var(--expense)" onclick="deleteTDC(${i})">Eliminar</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function showAddTDC() {
+  editingTDCIndex = -1;
+  document.getElementById('tdc-form-title').textContent = 'Nueva TDC';
+  ['tdc-bank','tdc-limit','tdc-cut-day','tdc-pay-day','tdc-cat','tdc-min-pct'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('tdc-currency').value = 'MXN';
+  showScreen('screen-tdc-form');
+}
+
+function editTDC(i) {
+  editingTDCIndex = i;
+  const c = state.tdcCards[i];
+  document.getElementById('tdc-form-title').textContent = 'Editar TDC';
+  document.getElementById('tdc-bank').value = c.bank || '';
+  document.getElementById('tdc-limit').value = c.limit || '';
+  document.getElementById('tdc-currency').value = c.currency || 'MXN';
+  document.getElementById('tdc-cut-day').value = c.cutDay || '';
+  document.getElementById('tdc-pay-day').value = c.payDay || '';
+  document.getElementById('tdc-cat').value = c.cat || '';
+  document.getElementById('tdc-min-pct').value = c.minPct || '';
+  showScreen('screen-tdc-form');
+}
+
+function saveTDC() {
+  const bank = document.getElementById('tdc-bank').value.trim();
+  if (!bank) { showToast('Ingresa el nombre del banco'); return; }
+  const card = {
+    bank,
+    limit: parseFloat(document.getElementById('tdc-limit').value) || 0,
+    currency: document.getElementById('tdc-currency').value,
+    cutDay: parseInt(document.getElementById('tdc-cut-day').value) || null,
+    payDay: parseInt(document.getElementById('tdc-pay-day').value) || null,
+    cat: parseFloat(document.getElementById('tdc-cat').value) || 0,
+    minPct: parseFloat(document.getElementById('tdc-min-pct').value) || 10,
+    vars: editingTDCIndex >= 0 ? (state.tdcCards[editingTDCIndex].vars || {}) : {}
+  };
+  if (!state.tdcCards) state.tdcCards = [];
+  if (editingTDCIndex >= 0) state.tdcCards[editingTDCIndex] = card;
+  else state.tdcCards.push(card);
+  saveState(); showToast('TDC guardada');
+  showScreen('screen-tdc');
+}
+
+function deleteTDC(i) {
+  if (confirm('Eliminar esta tarjeta?')) {
+    state.tdcCards.splice(i, 1);
+    saveState(); renderTDCList();
+  }
+}
+
+function openTDCDetail(i) {
+  editingTDCIndex = i;
+  const c = state.tdcCards[i];
+  const vars = c.vars || {};
+  document.getElementById('tdc-detail-title').textContent = c.bank;
+  document.getElementById('tdc-detail-info').innerHTML = `
+    <div class="setting-row"><span>Limite de credito</span><span>${c.currency} ${fmt(c.limit || 0)}</span></div>
+    <div class="setting-row"><span>Fecha de corte</span><span>Dia ${c.cutDay || '—'}</span></div>
+    <div class="setting-row"><span>Fecha limite de pago</span><span>Dia ${c.payDay || '—'}</span></div>
+    <div class="setting-row"><span>CAT anual</span><span>${c.cat || 0}%</span></div>
+    <div class="setting-row"><span>Pago minimo</span><span>${c.minPct || 10}%</span></div>
+  `;
+  document.getElementById('tdc-var-balance').value = vars.balance || '';
+  document.getElementById('tdc-var-min').value = vars.minPayment || '';
+  document.getElementById('tdc-var-msi').value = vars.msi || '';
+  document.getElementById('tdc-var-paid').value = vars.paid || '';
+  document.getElementById('sim-payment').value = '';
+  document.getElementById('sim-results').style.display = 'none';
+  showScreen('screen-tdc-detail');
+}
+
+function saveTDCVars() {
+  if (editingTDCIndex < 0) return;
+  state.tdcCards[editingTDCIndex].vars = {
+    balance: parseFloat(document.getElementById('tdc-var-balance').value) || 0,
+    minPayment: parseFloat(document.getElementById('tdc-var-min').value) || 0,
+    msi: parseFloat(document.getElementById('tdc-var-msi').value) || 0,
+    paid: parseFloat(document.getElementById('tdc-var-paid').value) || 0,
+  };
+  saveState(); showToast('Datos del mes actualizados');
+  runSimulator();
+}
+
+function runSimulator() {
+  if (editingTDCIndex < 0) return;
+  const c = state.tdcCards[editingTDCIndex];
+  const vars = c.vars || {};
+  const balance = parseFloat(document.getElementById('tdc-var-balance').value) || vars.balance || 0;
+  const payment = parseFloat(document.getElementById('sim-payment').value) || 0;
+  if (!balance || !payment) { document.getElementById('sim-results').style.display = 'none'; return; }
+  const monthlyRate = (c.cat || 0) / 100 / 12;
+  const interest = balance * monthlyRate;
+  const capital = Math.max(payment - interest, 0);
+  const newBalance = Math.max(balance - capital, 0);
+  let months = 0;
+  let total = 0;
+  if (payment > interest && balance > 0) {
+    let b = balance;
+    while (b > 0 && months < 600) {
+      const i = b * monthlyRate;
+      b = b + i - payment;
+      total += payment;
+      months++;
+      if (b < 0) { total += b; b = 0; }
+    }
+  }
+  const minPayment = balance * (c.minPct || 10) / 100;
+  let totalMin = 0;
+  if (minPayment > interest && balance > 0) {
+    let b = balance;
+    let m = 0;
+    while (b > 0 && m < 600) {
+      const i = b * monthlyRate;
+      const mp = b * (c.minPct || 10) / 100;
+      b = b + i - mp;
+      totalMin += mp;
+      m++;
+      if (b < 0) { totalMin += b; b = 0; }
+    }
+  }
+  document.getElementById('sim-interest').textContent = fmt(interest);
+  document.getElementById('sim-capital').textContent = fmt(capital);
+  document.getElementById('sim-months').textContent = months > 0 ? `${months} meses` : 'No liquidas';
+  document.getElementById('sim-total-min').textContent = totalMin > 0 ? fmt(totalMin) : '—';
+  document.getElementById('sim-results').style.display = 'block';
+}
