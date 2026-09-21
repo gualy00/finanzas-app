@@ -1532,26 +1532,28 @@ function updatePendingCount() {
 
 async function syncToSheets() {
   if (!state.sheetsURL) { showToast('Primero guarda la URL de tu Apps Script'); return; }
-  const pending = state.transactions.filter(t => !t.synced);
-  if (!pending.length) { showToast('Todo esta sincronizado'); return; }
-  document.getElementById('sync-status').textContent = 'Sincronizando...';
+  // Marcar todas como pendientes para sincronizar todas
+  state.transactions = state.transactions.map(t => ({ ...t, synced: false }));
+  saveState();
+  const pending = state.transactions;
+  if (!pending.length) { showToast('No hay transacciones para sincronizar'); return; }
+  const statusEl = document.getElementById('sync-status');
+  if (statusEl) statusEl.textContent = 'Sincronizando...';
   try {
     const res = await fetch(state.sheetsURL, {
       method: 'POST',
+      mode: 'no-cors',
       body: JSON.stringify({ transactions: pending }),
       headers: { 'Content-Type': 'application/json' }
     });
-    if (res.ok) {
-      state.transactions = state.transactions.map(t => ({ ...t, synced: true }));
-      saveState();
-      updatePendingCount();
-      document.getElementById('sync-status').textContent = `${pending.length} transacciones sincronizadas`;
-      showToast('Sincronizacion exitosa');
-    } else {
-      document.getElementById('sync-status').textContent = 'Error al sincronizar. Revisa la URL.';
-    }
+    state.transactions = state.transactions.map(t => ({ ...t, synced: true }));
+    saveState();
+    updatePendingCount();
+    if (statusEl) statusEl.textContent = pending.length + ' transacciones enviadas a Sheets';
+    showToast('Sincronizacion enviada');
   } catch (e) {
-    document.getElementById('sync-status').textContent = 'Error de conexion. Verifica tu internet.';
+    if (statusEl) statusEl.textContent = 'Error de conexion. Verifica tu internet.';
+    showToast('Error de conexion');
   }
 }
 
