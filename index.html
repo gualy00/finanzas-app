@@ -250,9 +250,148 @@
         <div class="setting-row"><span>Cambiar PIN</span><button class="btn-secondary small" onclick="showChangePIN()">Cambiar</button></div>
       </div>
       <div class="settings-section">
+        <h3>Fase 2</h3>
+        <div class="setting-row"><span>Presupuesto por categoria</span><button class="btn-secondary small" onclick="showScreen('screen-budget')">Abrir</button></div>
+        <div class="setting-row"><span>Gastos recurrentes</span><button class="btn-secondary small" onclick="showScreen('screen-recurring')">Abrir</button></div>
+        <div class="setting-row"><span>Tarjetas de credito (TDC)</span><button class="btn-secondary small" onclick="showScreen('screen-tdc')">Abrir</button></div>
+      </div>
+      <div class="settings-section">
         <h3>Datos</h3>
         <div class="setting-row"><span>Exportar CSV</span><button class="btn-secondary small" onclick="exportCSV()">Exportar</button></div>
         <div class="setting-row danger"><span>Borrar todos los datos</span><button class="btn-danger small" onclick="clearAllData()">Borrar</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRESUPUESTO -->
+  <div id="screen-budget" class="screen">
+    <div class="screen-header"><button class="back-btn" onclick="showScreen('screen-settings')">&#8592; Volver</button><h2>Presupuesto</h2></div>
+    <div class="settings-list">
+      <div class="settings-section">
+        <h3>Limite diario general</h3>
+        <div class="setting-row">
+          <span>Monto MXN</span>
+          <div class="exchange-setting">
+            <input type="number" id="daily-limit-input" min="0" step="50" placeholder="0" />
+            <button class="btn-secondary small" onclick="saveDailyLimit()">Guardar</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>Limite mensual por categoria</h3>
+        <div id="budget-categories-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GASTOS RECURRENTES -->
+  <div id="screen-recurring" class="screen">
+    <div class="screen-header"><button class="back-btn" onclick="showScreen('screen-settings')">&#8592; Volver</button><h2>Gastos Recurrentes</h2></div>
+    <div class="main-scroll">
+      <div style="padding:12px">
+        <button class="btn-primary" onclick="showScreen('screen-add-recurring')" style="margin-bottom:12px">+ Agregar recurrente</button>
+        <div id="recurring-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGREGAR RECURRENTE -->
+  <div id="screen-add-recurring" class="screen">
+    <div class="screen-header"><button class="back-btn" onclick="showScreen('screen-recurring')">&#8592; Volver</button><h2>Nuevo Recurrente</h2></div>
+    <div class="transaction-form">
+      <div class="form-group"><label>Nombre</label><input type="text" id="rec-name" placeholder="Ej: Netflix, Renta, Gym" maxlength="30" /></div>
+      <div class="form-group"><label>Monto</label><input type="number" id="rec-amount" min="0" step="1" placeholder="0.00" /></div>
+      <div class="form-group"><label>Moneda</label>
+        <select id="rec-currency"><option value="MXN">MXN</option><option value="USD">USD</option></select>
+      </div>
+      <div class="form-group"><label>Categoria</label>
+        <select id="rec-category"></select>
+      </div>
+      <div class="form-group"><label>Cuenta</label>
+        <select id="rec-account"></select>
+      </div>
+      <div class="form-group"><label>Frecuencia</label>
+        <select id="rec-frequency">
+          <option value="daily">Diario</option>
+          <option value="weekly">Semanal</option>
+          <option value="monthly" selected>Mensual</option>
+          <option value="annual">Anual</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Dia del mes (si es mensual)</label><input type="number" id="rec-day" min="1" max="31" placeholder="Ej: 15" /></div>
+      <div class="form-group"><label>Perfil</label>
+        <select id="rec-profile"></select>
+      </div>
+      <button class="btn-primary save-btn" onclick="saveRecurring()">Guardar</button>
+    </div>
+  </div>
+
+  <!-- TDC -->
+  <div id="screen-tdc" class="screen">
+    <div class="screen-header"><button class="back-btn" onclick="showScreen('screen-settings')">&#8592; Volver</button><h2>Tarjetas de Credito</h2></div>
+    <div class="main-scroll">
+      <div style="padding:12px">
+        <button class="btn-primary" onclick="showAddTDC()" style="margin-bottom:12px">+ Agregar TDC</button>
+        <div id="tdc-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGREGAR / EDITAR TDC -->
+  <div id="screen-tdc-form" class="screen">
+    <div class="screen-header"><button class="back-btn" onclick="showScreen('screen-tdc')">&#8592; Volver</button><h2 id="tdc-form-title">Nueva TDC</h2></div>
+    <div class="transaction-form">
+      <div class="form-group"><label>Banco / Nombre</label><input type="text" id="tdc-bank" placeholder="Ej: BBVA Azul" maxlength="30" /></div>
+      <div class="form-group"><label>Limite de credito</label><input type="number" id="tdc-limit" min="0" step="100" placeholder="0" /></div>
+      <div class="form-group"><label>Moneda</label>
+        <select id="tdc-currency"><option value="MXN">MXN</option><option value="USD">USD</option></select>
+      </div>
+      <div class="form-group"><label>Fecha de corte (dia del mes)</label><input type="number" id="tdc-cut-day" min="1" max="31" placeholder="Ej: 5" /></div>
+      <div class="form-group"><label>Fecha limite de pago (dia del mes)</label><input type="number" id="tdc-pay-day" min="1" max="31" placeholder="Ej: 25" /></div>
+      <div class="form-group"><label>Tasa de interes anual CAT (%)</label><input type="number" id="tdc-cat" min="0" step="0.1" placeholder="Ej: 89.5" /></div>
+      <div class="form-group"><label>Porcentaje pago minimo (%)</label><input type="number" id="tdc-min-pct" min="0" step="0.1" placeholder="Ej: 10" /></div>
+      <button class="btn-primary save-btn" onclick="saveTDC()">Guardar TDC</button>
+    </div>
+  </div>
+
+  <!-- DETALLE TDC -->
+  <div id="screen-tdc-detail" class="screen">
+    <div class="screen-header"><button class="back-btn" onclick="showScreen('screen-tdc')">&#8592; Volver</button><h2 id="tdc-detail-title">Detalle TDC</h2></div>
+    <div class="main-scroll">
+      <div style="padding:12px;display:flex;flex-direction:column;gap:14px">
+
+        <!-- Info fija -->
+        <div class="settings-section">
+          <h3>Datos de la tarjeta</h3>
+          <div id="tdc-detail-info"></div>
+        </div>
+
+        <!-- Datos variables del mes -->
+        <div class="settings-section">
+          <h3>Este mes</h3>
+          <div style="padding:12px;display:flex;flex-direction:column;gap:12px">
+            <div class="form-group"><label>Saldo actual del estado de cuenta</label><input type="number" id="tdc-var-balance" min="0" step="1" placeholder="0" /></div>
+            <div class="form-group"><label>Pago minimo del mes</label><input type="number" id="tdc-var-min" min="0" step="1" placeholder="0" /></div>
+            <div class="form-group"><label>Compras MSI nuevas este mes</label><input type="number" id="tdc-var-msi" min="0" step="1" placeholder="0" /></div>
+            <div class="form-group"><label>Monto pagado este mes</label><input type="number" id="tdc-var-paid" min="0" step="1" placeholder="0" /></div>
+            <button class="btn-secondary" onclick="saveTDCVars()">Actualizar datos del mes</button>
+          </div>
+        </div>
+
+        <!-- Simulador -->
+        <div class="settings-section">
+          <h3>Simulador de intereses</h3>
+          <div style="padding:12px;display:flex;flex-direction:column;gap:12px">
+            <div class="form-group"><label>Cuanto vas a pagar este mes</label><input type="number" id="sim-payment" min="0" step="1" placeholder="0" oninput="runSimulator()" /></div>
+            <div id="sim-results" style="display:none">
+              <div class="sim-row"><span>Interes que generaras</span><span id="sim-interest" style="color:var(--expense);font-weight:700"></span></div>
+              <div class="sim-row"><span>Capital que bajas</span><span id="sim-capital" style="color:var(--income);font-weight:700"></span></div>
+              <div class="sim-row"><span>Meses para liquidar</span><span id="sim-months" style="font-weight:700"></span></div>
+              <div class="sim-row"><span>Total si solo pagas minimo</span><span id="sim-total-min" style="color:var(--expense);font-weight:700"></span></div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
