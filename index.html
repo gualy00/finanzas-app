@@ -13,36 +13,27 @@
 </head>
 <body class="theme-dark">
 
-  <!-- PANTALLA: PIN -->
+  <!-- PIN -->
   <div id="screen-pin" class="screen active">
     <div class="pin-container">
       <div class="app-logo">💰</div>
       <h1 class="app-name">MisFinanzas</h1>
-      <p class="pin-label" id="pin-label">Ingresa tu PIN</p>
+      <p class="pin-label">Ingresa tu PIN</p>
       <div class="pin-dots" id="pin-dots">
-        <span class="dot"></span><span class="dot"></span>
-        <span class="dot"></span><span class="dot"></span>
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
       </div>
       <div class="pin-error" id="pin-error"></div>
       <div class="numpad">
-        <button class="num-btn" data-num="1">1</button>
-        <button class="num-btn" data-num="2">2</button>
-        <button class="num-btn" data-num="3">3</button>
-        <button class="num-btn" data-num="4">4</button>
-        <button class="num-btn" data-num="5">5</button>
-        <button class="num-btn" data-num="6">6</button>
-        <button class="num-btn" data-num="7">7</button>
-        <button class="num-btn" data-num="8">8</button>
-        <button class="num-btn" data-num="9">9</button>
-        <button class="num-btn empty"></button>
-        <button class="num-btn" data-num="0">0</button>
-        <button class="num-btn delete-btn" id="pin-delete">⌫</button>
+        <button class="num-btn" data-num="1">1</button><button class="num-btn" data-num="2">2</button><button class="num-btn" data-num="3">3</button>
+        <button class="num-btn" data-num="4">4</button><button class="num-btn" data-num="5">5</button><button class="num-btn" data-num="6">6</button>
+        <button class="num-btn" data-num="7">7</button><button class="num-btn" data-num="8">8</button><button class="num-btn" data-num="9">9</button>
+        <button class="num-btn empty"></button><button class="num-btn" data-num="0">0</button><button class="num-btn delete-btn" id="pin-delete">⌫</button>
       </div>
       <button class="skip-pin-btn" id="skip-pin-btn">Configurar PIN después</button>
     </div>
   </div>
 
-  <!-- PANTALLA: SETUP INICIAL -->
+  <!-- SETUP -->
   <div id="screen-setup" class="screen">
     <div class="setup-container">
       <div class="setup-header">
@@ -50,55 +41,39 @@
         <h1>Bienvenido a MisFinanzas</h1>
         <p>Configura tu app en unos pasos</p>
       </div>
-      <div class="setup-steps" id="setup-steps">
+      <div id="setup-steps">
         <div class="setup-step active" id="step-1">
           <h2>👥 Paso 1 — Usuarios</h2>
-          <div class="form-group">
-            <label>Nombre Usuario 1 (tú)</label>
-            <input type="text" id="user1-name" placeholder="Ej: Carlos" maxlength="20" />
-          </div>
-          <div class="form-group">
-            <label>Nombre Usuario 2 (opcional)</label>
-            <input type="text" id="user2-name" placeholder="Ej: María" maxlength="20" />
-          </div>
+          <div class="form-group"><label>Tu nombre</label><input type="text" id="user1-name" placeholder="Ej: Carlos" maxlength="20" /></div>
+          <div class="form-group"><label>Nombre Usuario 2 (opcional)</label><input type="text" id="user2-name" placeholder="Ej: María" maxlength="20" /></div>
           <button class="btn-primary" onclick="nextStep(2)">Siguiente →</button>
         </div>
         <div class="setup-step" id="step-2">
-          <h2>🗂️ Paso 2 — Perfiles / Negocios</h2>
-          <p class="step-desc">El perfil Personal ya está incluido. Agrega tus negocios.</p>
+          <h2>🗂️ Paso 2 — Perfiles</h2>
+          <p class="step-desc">Personal ya está incluido. Agrega tus negocios.</p>
           <div class="profile-list" id="profile-list">
-            <div class="profile-item fixed">
-              <span class="profile-icon">👤</span>
-              <span>Personal</span>
-              <span class="fixed-badge">Fijo</span>
-            </div>
+            <div class="profile-item fixed"><span>👤</span><span>Personal</span><span class="fixed-badge">Fijo</span></div>
           </div>
-          <div class="form-group">
-            <input type="text" id="new-profile-name" placeholder="Nombre del negocio (ej: Despacho)" maxlength="25" />
-          </div>
+          <div class="form-group"><input type="text" id="new-profile-name" placeholder="Nombre del negocio" maxlength="25" /></div>
           <button class="btn-secondary" onclick="addProfile()">+ Agregar negocio</button>
           <button class="btn-primary" onclick="nextStep(3)">Siguiente →</button>
         </div>
         <div class="setup-step" id="step-3">
           <h2>🏦 Paso 3 — Cuentas</h2>
-          <p class="step-desc">Edita o elimina las sugeridas. Agrega las tuyas.</p>
+          <p class="step-desc">Edita o elimina las sugeridas.</p>
           <div class="accounts-list" id="accounts-list"></div>
           <div class="add-account-row">
             <input type="text" id="new-account-name" placeholder="Nombre de cuenta" maxlength="25" />
-            <select id="new-account-currency">
-              <option value="MXN">MXN</option>
-              <option value="USD">USD</option>
-            </select>
+            <select id="new-account-currency"><option value="MXN">MXN</option><option value="USD">USD</option></select>
             <button class="btn-secondary small" onclick="addAccount()">+</button>
           </div>
           <button class="btn-primary" onclick="nextStep(4)">Siguiente →</button>
         </div>
         <div class="setup-step" id="step-4">
           <h2>🏷️ Paso 4 — Categorías</h2>
-          <p class="step-desc">Toca para editar el nombre.</p>
           <div class="cat-tabs">
-            <button class="cat-tab active" onclick="showCatTab('gastos', this)">Gastos</button>
-            <button class="cat-tab" onclick="showCatTab('ingresos', this)">Ingresos</button>
+            <button class="cat-tab active" onclick="showCatTab('gastos',this)">Gastos</button>
+            <button class="cat-tab" onclick="showCatTab('ingresos',this)">Ingresos</button>
           </div>
           <div id="cat-gastos" class="cat-list"></div>
           <div id="cat-ingresos" class="cat-list hidden"></div>
@@ -109,25 +84,16 @@
           <button class="btn-primary" onclick="nextStep(5)">Siguiente →</button>
         </div>
         <div class="setup-step" id="step-5">
-          <h2>🔒 Paso 5 — Seguridad</h2>
-          <p class="step-desc">Configura un PIN de 4 dígitos para proteger tu app.</p>
+          <h2>🔒 Paso 5 — PIN</h2>
+          <p class="step-desc">4 dígitos para proteger tu app.</p>
           <div class="pin-dots setup-dots" id="setup-pin-dots">
-            <span class="dot"></span><span class="dot"></span>
-            <span class="dot"></span><span class="dot"></span>
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
           </div>
           <div class="numpad">
-            <button class="num-btn" data-num="1" onclick="setupPinInput(1)">1</button>
-            <button class="num-btn" data-num="2" onclick="setupPinInput(2)">2</button>
-            <button class="num-btn" data-num="3" onclick="setupPinInput(3)">3</button>
-            <button class="num-btn" data-num="4" onclick="setupPinInput(4)">4</button>
-            <button class="num-btn" data-num="5" onclick="setupPinInput(5)">5</button>
-            <button class="num-btn" data-num="6" onclick="setupPinInput(6)">6</button>
-            <button class="num-btn" data-num="7" onclick="setupPinInput(7)">7</button>
-            <button class="num-btn" data-num="8" onclick="setupPinInput(8)">8</button>
-            <button class="num-btn" data-num="9" onclick="setupPinInput(9)">9</button>
-            <button class="num-btn empty"></button>
-            <button class="num-btn" data-num="0" onclick="setupPinInput(0)">0</button>
-            <button class="num-btn delete-btn" onclick="setupPinDelete()">⌫</button>
+            <button class="num-btn" onclick="setupPinInput(1)">1</button><button class="num-btn" onclick="setupPinInput(2)">2</button><button class="num-btn" onclick="setupPinInput(3)">3</button>
+            <button class="num-btn" onclick="setupPinInput(4)">4</button><button class="num-btn" onclick="setupPinInput(5)">5</button><button class="num-btn" onclick="setupPinInput(6)">6</button>
+            <button class="num-btn" onclick="setupPinInput(7)">7</button><button class="num-btn" onclick="setupPinInput(8)">8</button><button class="num-btn" onclick="setupPinInput(9)">9</button>
+            <button class="num-btn empty"></button><button class="num-btn" onclick="setupPinInput(0)">0</button><button class="num-btn delete-btn" onclick="setupPinDelete()">⌫</button>
           </div>
           <button class="btn-ghost" onclick="finishSetup()">Omitir por ahora</button>
         </div>
@@ -135,7 +101,7 @@
     </div>
   </div>
 
-  <!-- PANTALLA: PRINCIPAL -->
+  <!-- PRINCIPAL -->
   <div id="screen-main" class="screen">
     <header class="app-header">
       <div class="header-top">
@@ -158,40 +124,43 @@
       <button onclick="editExchangeRate()">✏️</button>
     </div>
 
-    <div class="period-selector">
-      <button class="period-btn active" onclick="setPeriod('today', this)">Hoy</button>
-      <button class="period-btn" onclick="setPeriod('week', this)">Semana</button>
-      <button class="period-btn" onclick="setPeriod('month', this)">Mes</button>
-      <button class="period-btn" onclick="setPeriod('custom', this)">Rango</button>
+    <!-- SWIPE PERÍODO -->
+    <div class="period-swipe">
+      <button class="swipe-arrow" onclick="changePeriod(-1)">‹</button>
+      <span class="period-label" id="period-label">Julio 2026</span>
+      <button class="swipe-arrow" onclick="changePeriod(1)">›</button>
+    </div>
+    <div class="period-tabs">
+      <button class="period-btn active" onclick="setPeriodMode('month',this)">Mes</button>
+      <button class="period-btn" onclick="setPeriodMode('week',this)">Semana</button>
+      <button class="period-btn" onclick="setPeriodMode('today',this)">Hoy</button>
     </div>
 
     <!-- BALANCE -->
     <div class="balance-card">
-      <div class="balance-item income">
-        <span class="balance-label">Ingresos</span>
-        <span class="balance-amount" id="total-income">$0.00</span>
-      </div>
-      <div class="balance-item expense">
-        <span class="balance-label">Gastos</span>
-        <span class="balance-amount" id="total-expense">$0.00</span>
-      </div>
-      <div class="balance-item diff">
-        <span class="balance-label">Diferencia</span>
-        <span class="balance-amount" id="total-diff">$0.00</span>
-      </div>
+      <div class="balance-item income"><span class="balance-label">Ingresos</span><span class="balance-amount" id="total-income">$0.00</span></div>
+      <div class="balance-item expense"><span class="balance-label">Gastos</span><span class="balance-amount" id="total-expense">$0.00</span></div>
+      <div class="balance-item diff"><span class="balance-label">Diferencia</span><span class="balance-amount" id="total-diff">$0.00</span></div>
     </div>
 
-    <!-- DONA: botones + canvas en bloque normal sin position:absolute -->
+    <!-- DONA SVG (flujo normal, sin position:absolute) -->
     <div class="donut-block">
       <div class="donut-toggle-btns">
-        <button class="donut-btn active" onclick="setDonutMode('balance', this)">Balance</button>
-        <button class="donut-btn" onclick="setDonutMode('gastos', this)">Gastos</button>
-        <button class="donut-btn" onclick="setDonutMode('ingresos', this)">Ingresos</button>
+        <button class="donut-btn active" onclick="setDonutMode('balance',this)">Balance</button>
+        <button class="donut-btn" onclick="setDonutMode('gastos',this)">Gastos</button>
+        <button class="donut-btn" onclick="setDonutMode('ingresos',this)">Ingresos</button>
       </div>
-      <!-- El canvas dibuja todo: dona + texto central -->
-      <canvas id="donut-chart" width="200" height="200"></canvas>
+      <svg id="donut-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" width="200" height="200" style="display:block;margin:0 auto;">
+        <g id="donut-segments"></g>
+        <circle cx="100" cy="100" r="54" fill="#0f0f1a" id="donut-hole"/>
+        <text id="donut-label-text" x="100" y="94" text-anchor="middle" font-size="12" fill="#9090b0" font-family="-apple-system,sans-serif">Balance</text>
+        <text id="donut-amount-text" x="100" y="115" text-anchor="middle" font-size="16" font-weight="bold" fill="#e8e8f0" font-family="-apple-system,sans-serif">$0</text>
+      </svg>
       <div class="cat-legend" id="cat-legend"></div>
     </div>
+
+    <!-- BARRA DE CUENTAS -->
+    <div class="accounts-bar" id="accounts-bar"></div>
 
     <div class="section-header">
       <span>Movimientos recientes</span>
@@ -200,22 +169,13 @@
     <div class="transactions-list" id="recent-transactions"></div>
 
     <div class="main-buttons">
-      <button class="btn-expense" onclick="openTransaction('gasto')">
-        <span class="btn-icon">−</span>
-        <span>Gasto</span>
-      </button>
-      <button class="btn-transfer" onclick="openTransaction('transferencia')">
-        <span class="btn-icon">⇄</span>
-        <span>Transfer.</span>
-      </button>
-      <button class="btn-income" onclick="openTransaction('ingreso')">
-        <span class="btn-icon">+</span>
-        <span>Ingreso</span>
-      </button>
+      <button class="btn-expense" onclick="openTransaction('gasto')"><span class="btn-icon">−</span><span>Gasto</span></button>
+      <button class="btn-transfer" onclick="openTransaction('transferencia')"><span class="btn-icon">⇄</span><span>Transfer.</span></button>
+      <button class="btn-income" onclick="openTransaction('ingreso')"><span class="btn-icon">+</span><span>Ingreso</span></button>
     </div>
   </div>
 
-  <!-- PANTALLA: NUEVA TRANSACCIÓN -->
+  <!-- TRANSACCIÓN -->
   <div id="screen-transaction" class="screen">
     <div class="screen-header">
       <button class="back-btn" onclick="showScreen('screen-main')">← Volver</button>
@@ -226,101 +186,52 @@
         <span class="currency-symbol" id="tx-currency-symbol">$</span>
         <span class="amount-value" id="tx-amount-display">0</span>
         <select class="currency-select" id="tx-currency" onchange="updateCurrencySymbol()">
-          <option value="MXN">MXN</option>
-          <option value="USD">USD</option>
+          <option value="MXN">MXN</option><option value="USD">USD</option>
         </select>
       </div>
       <div class="amount-numpad">
-        <button onclick="amountInput('1')">1</button>
-        <button onclick="amountInput('2')">2</button>
-        <button onclick="amountInput('3')">3</button>
-        <button onclick="amountInput('4')">4</button>
-        <button onclick="amountInput('5')">5</button>
-        <button onclick="amountInput('6')">6</button>
-        <button onclick="amountInput('7')">7</button>
-        <button onclick="amountInput('8')">8</button>
-        <button onclick="amountInput('9')">9</button>
-        <button onclick="amountInput('.')">.</button>
-        <button onclick="amountInput('0')">0</button>
-        <button onclick="amountDelete()">⌫</button>
+        <button onclick="amountInput('1')">1</button><button onclick="amountInput('2')">2</button><button onclick="amountInput('3')">3</button>
+        <button onclick="amountInput('4')">4</button><button onclick="amountInput('5')">5</button><button onclick="amountInput('6')">6</button>
+        <button onclick="amountInput('7')">7</button><button onclick="amountInput('8')">8</button><button onclick="amountInput('9')">9</button>
+        <button onclick="amountInput('.')">.</button><button onclick="amountInput('0')">0</button><button onclick="amountDelete()">⌫</button>
       </div>
-      <div class="form-section">
-        <label>Categoría</label>
-        <div class="cat-grid" id="tx-categories"></div>
-      </div>
-      <div class="form-section">
-        <label>Cuenta</label>
-        <div class="account-chips" id="tx-accounts"></div>
-      </div>
-      <div class="form-section">
-        <label>Perfil</label>
-        <div class="profile-chips" id="tx-profiles"></div>
-      </div>
-      <div class="form-section">
-        <label>Fecha</label>
-        <input type="date" id="tx-date" class="date-input" />
-      </div>
-      <div class="form-section">
-        <label>Nota (opcional)</label>
-        <input type="text" id="tx-note" placeholder="Agrega una nota..." maxlength="100" />
-      </div>
-      <div class="form-section toggle-row">
-        <label>Gasto deducible SAT</label>
-        <div class="toggle" id="tx-deducible-toggle" onclick="toggleDeducible()">
-          <div class="toggle-knob"></div>
-        </div>
-      </div>
-      <div class="form-section">
-        <label>Registrado por</label>
-        <div class="user-chips" id="tx-users"></div>
-      </div>
+      <div class="form-section"><label>Categoría</label><div class="cat-grid" id="tx-categories"></div></div>
+      <div class="form-section"><label>Cuenta</label><div class="account-chips" id="tx-accounts"></div></div>
+      <div class="form-section"><label>Perfil</label><div class="profile-chips" id="tx-profiles"></div></div>
+      <div class="form-section"><label>Fecha</label><input type="date" id="tx-date" /></div>
+      <div class="form-section"><label>Nota (opcional)</label><input type="text" id="tx-note" placeholder="Agrega una nota..." maxlength="100" /></div>
+      <div class="form-section toggle-row"><label>Gasto deducible SAT</label><div class="toggle" id="tx-deducible-toggle" onclick="toggleDeducible()"><div class="toggle-knob"></div></div></div>
+      <div class="form-section"><label>Registrado por</label><div class="user-chips" id="tx-users"></div></div>
       <button class="btn-primary save-btn" onclick="saveTransaction()">Guardar</button>
     </div>
   </div>
 
-  <!-- PANTALLA: TODOS LOS MOVIMIENTOS -->
+  <!-- MOVIMIENTOS -->
   <div id="screen-transactions" class="screen">
-    <div class="screen-header">
-      <button class="back-btn" onclick="showScreen('screen-main')">← Volver</button>
-      <h2>Movimientos</h2>
-    </div>
+    <div class="screen-header"><button class="back-btn" onclick="showScreen('screen-main')">← Volver</button><h2>Movimientos</h2></div>
     <div class="filter-bar">
-      <select id="filter-profile" onchange="filterTransactions()">
-        <option value="all">Todos los perfiles</option>
-      </select>
+      <select id="filter-profile" onchange="filterTransactions()"><option value="all">Todos los perfiles</option></select>
       <select id="filter-type" onchange="filterTransactions()">
-        <option value="all">Todos</option>
-        <option value="gasto">Gastos</option>
-        <option value="ingreso">Ingresos</option>
-        <option value="transferencia">Transferencias</option>
+        <option value="all">Todos</option><option value="gasto">Gastos</option><option value="ingreso">Ingresos</option><option value="transferencia">Transferencias</option>
       </select>
     </div>
     <div class="transactions-list full" id="all-transactions"></div>
   </div>
 
-  <!-- PANTALLA: BÚSQUEDA -->
+  <!-- BÚSQUEDA -->
   <div id="screen-search" class="screen">
-    <div class="screen-header">
-      <button class="back-btn" onclick="showScreen('screen-main')">← Volver</button>
-      <h2>Buscar</h2>
-    </div>
-    <div class="search-box">
-      <input type="text" id="search-input" placeholder="Buscar por categoría, monto, nota..." oninput="searchTransactions()" />
-    </div>
+    <div class="screen-header"><button class="back-btn" onclick="showScreen('screen-main')">← Volver</button><h2>Buscar</h2></div>
+    <div class="search-box"><input type="text" id="search-input" placeholder="Buscar por categoría, monto, nota..." oninput="searchTransactions()" /></div>
     <div class="transactions-list full" id="search-results"></div>
   </div>
 
-  <!-- PANTALLA: CONFIGURACIÓN -->
+  <!-- CONFIGURACIÓN -->
   <div id="screen-settings" class="screen">
-    <div class="screen-header">
-      <button class="back-btn" onclick="showScreen('screen-main')">← Volver</button>
-      <h2>Configuración</h2>
-    </div>
+    <div class="screen-header"><button class="back-btn" onclick="showScreen('screen-main')">← Volver</button><h2>Configuración</h2></div>
     <div class="settings-list">
       <div class="settings-section">
         <h3>Apariencia</h3>
-        <div class="setting-row">
-          <span>Modo</span>
+        <div class="setting-row"><span>Modo</span>
           <div class="theme-btns">
             <button class="theme-btn" onclick="setTheme('light')">☀️ Claro</button>
             <button class="theme-btn active" onclick="setTheme('dark')">🌙 Oscuro</button>
@@ -330,36 +241,27 @@
       </div>
       <div class="settings-section">
         <h3>Tipo de cambio</h3>
-        <div class="setting-row">
-          <span>USD/MXN actual</span>
-          <div class="exchange-setting">
-            <input type="number" id="settings-exchange" step="0.01" min="1" />
-            <button class="btn-secondary small" onclick="saveExchangeRate()">Guardar</button>
-          </div>
+        <div class="setting-row"><span>USD/MXN</span>
+          <div class="exchange-setting"><input type="number" id="settings-exchange" step="0.01" min="1" /><button class="btn-secondary small" onclick="saveExchangeRate()">Guardar</button></div>
         </div>
       </div>
       <div class="settings-section">
         <h3>Seguridad</h3>
-        <div class="setting-row">
-          <span>Cambiar PIN</span>
-          <button class="btn-secondary small" onclick="showChangePIN()">Cambiar</button>
-        </div>
+        <div class="setting-row"><span>Cambiar PIN</span><button class="btn-secondary small" onclick="showChangePIN()">Cambiar</button></div>
+      </div>
+      <div class="settings-section">
+        <h3>Acceso rápido</h3>
+        <div class="setting-row"><span>Instalar acceso directo a gasto rápido</span><button class="btn-secondary small" onclick="installShortcut()">Instalar</button></div>
       </div>
       <div class="settings-section">
         <h3>Datos</h3>
-        <div class="setting-row">
-          <span>Exportar transacciones</span>
-          <button class="btn-secondary small" onclick="exportCSV()">CSV</button>
-        </div>
-        <div class="setting-row danger">
-          <span>Borrar todos los datos</span>
-          <button class="btn-danger small" onclick="clearAllData()">Borrar</button>
-        </div>
+        <div class="setting-row"><span>Exportar CSV</span><button class="btn-secondary small" onclick="exportCSV()">Exportar</button></div>
+        <div class="setting-row danger"><span>Borrar todos los datos</span><button class="btn-danger small" onclick="clearAllData()">Borrar</button></div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: TIPO DE CAMBIO -->
+  <!-- MODAL TIPO DE CAMBIO -->
   <div id="modal-exchange" class="modal hidden">
     <div class="modal-card">
       <h3>Tipo de cambio USD/MXN</h3>
