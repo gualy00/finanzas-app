@@ -47,6 +47,8 @@ function showScreen(id){
   if(id==='screen-recurring')initRecurring();
   if(id==='screen-add-recurring')initAddRecurring();
   if(id==='screen-tdc')initTDC();
+  if(id==='screen-tdc-form'){}
+  if(id==='screen-tdc-detail'){}
 }
 
 function applyTheme(t){
