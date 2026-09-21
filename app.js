@@ -625,7 +625,11 @@ function showToast(msg){
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>t.classList.add('hidden'),2500);
 }
-
+// Sincronización automática al recuperar internet
+window.addEventListener('online', () => {
+  showToast('Conexión restaurada — sincronizando...');
+  if (state.sheetsURL) syncToSheets();
+});
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
