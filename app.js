@@ -499,10 +499,26 @@ function openTransaction(type, txId=null){
   showScreen('screen-transaction');
 }
 function amountInput(c){
-  if(c==='.'&&currentAmountStr.includes('.'))return;
-  if(currentAmountStr==='0'&&c!=='.')currentAmountStr=c;
-  else if(currentAmountStr.length<10)currentAmountStr+=c;
+  const ops = ['+','-','×','÷'];
+  if(c==='.' && currentAmountStr.split(/[+\-×÷]/).pop().includes('.')) return;
+  if(currentAmountStr==='0' && c!=='.' && !ops.includes(c)) currentAmountStr=c;
+  else if(currentAmountStr.length<20) currentAmountStr+=c;
   document.getElementById('tx-amount-display').textContent=currentAmountStr;
+}
+
+function amountDelete(){
+  currentAmountStr=currentAmountStr.slice(0,-1)||'0';
+  document.getElementById('tx-amount-display').textContent=currentAmountStr;
+}
+
+function amountCalc(){
+  try{
+    const expr=currentAmountStr.replace(/×/g,'*').replace(/÷/g,'/');
+    const result=Function('"use strict";return ('+expr+')')();
+    if(!isFinite(result)) return;
+    currentAmountStr=parseFloat(result.toFixed(2)).toString();
+    document.getElementById('tx-amount-display').textContent=currentAmountStr;
+  }catch(e){}
 }
 function amountDelete(){currentAmountStr=currentAmountStr.slice(0,-1)||'0';document.getElementById('tx-amount-display').textContent=currentAmountStr;}
 function updateCurrencySymbol(){document.getElementById('tx-currency-symbol').textContent=document.getElementById('tx-currency').value==='USD'?'US$':'$';}
