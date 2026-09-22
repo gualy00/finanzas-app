@@ -530,7 +530,7 @@ function renderTxCategories(){
 }
 function selectCat(n){selectedCategory=n;renderTxCategories();}
 function renderTxAccounts(){
-  document.getElementById('tx-accounts').innerHTML=state.accounts.map(a=>`<div class="chip ${selectedAccount===a.name?'selected':''}" onclick="selectAccount('${a.name}')">${a.name} <small>${a.currency}</small></div>`).join('');
+  document.getElementById('tx-accounts').innerHTML=state.accounts.map(a=>`<div class="chip ${selectedAccount===a.name?'selected':''}" onclick="selectAccount('${a.name}')">${a.name}</div>`).join('');
 }
 function selectAccount(n){selectedAccount=n;renderTxAccounts();}
 function renderTxProfiles(){
