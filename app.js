@@ -420,7 +420,7 @@ function renderAccountsBar(){
 }
 
 function renderRecentTransactions(){
-  const txs=getFilteredTx().slice().reverse().slice(0,8);
+  const txs=getFilteredTx().filter(t=>!t.deleted).slice().reverse().slice(0,8);
   const el=document.getElementById('recent-transactions');
   el.innerHTML=txs.length?txs.map(txHTML).join(''):
     '<div class="empty-state"><span class="empty-icon">💸</span>Sin movimientos en este periodo.<br>Toca + Gasto o + Ingreso para empezar.</div>';
@@ -446,7 +446,16 @@ function txHTML(tx){
   </div>`;
 }
 
-function deleteTx(id){
+function function deleteTx(id){
+  if(confirm('¿Eliminar esta transaccion?')){
+    const index = state.transactions.findIndex(t=>t.id===id);
+    if(index>=0) state.transactions[index]={...state.transactions[index], deleted:true, synced:false};
+    saveState();
+    if(navigator.onLine && state.sheetsURL) syncToSheets();
+    else { initMain(); renderAllTransactions(); }
+    showToast('Transaccion eliminada');
+  }
+}(id){
   if(confirm('¿Eliminar esta transaccion?')){
     state.transactions=state.transactions.filter(t=>t.id!==id);
     saveState();
