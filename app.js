@@ -1204,21 +1204,57 @@ async function syncToSheets() {
   state.sheetsURL = url;
   saveState();
   const statusEl = document.getElementById('sync-status');
-  const allTxs = state.transactions;
-  if (!allTxs.length) { showToast('No hay transacciones para sincronizar'); return; }
-  if (statusEl) statusEl.textContent = 'Enviando...';
+  if (statusEl) statusEl.textContent = 'Sincronizando...';
+
+  const pending = state.transactions.filter(t => !t.synced || t.deleted);
+  const config = {
+    users: state.users, profiles: state.profiles,
+    accounts: state.accounts, categoriesGasto: state.categoriesGasto,
+    categoriesIngreso: state.categoriesIngreso,
+    exchangeRate: state.exchangeRate, budgets: state.budgets || {},
+    dailyLimit: state.dailyLimit || 0
+  };
+
   try {
-    await fetch(url, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({ transactions: allTxs }),
-      headers: { 'Content-Type': 'application/json' }
-    });
-    state.transactions = state.transactions.map(t => ({ ...t, synced: true }));
-    saveState();
+    // 1. Subir cambios pendientes
+    if (pending.length > 0) {
+      await fetch(url, {
+        method: 'POST', mode: 'no-cors',
+        body: JSON.stringify({ transactions: pending, config }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      state.transactions = state.transactions
+        .filter(t => !t.deleted)
+        .map(t => ({ ...t, synced: true }));
+      saveState();
+    }
+
+    // 2. Descargar lo que hay en Sheets
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.ok && data.transactions) {
+      const localIds = new Set(state.transactions.map(t => String(t.id)));
+      const newFromServer = data.transactions.filter(t => !localIds.has(String(t.id)));
+      if (newFromServer.length > 0) {
+        state.transactions = [...state.transactions, ...newFromServer];
+        saveState();
+      }
+      if (data.config && state.transactions.length === 0) {
+        state.users = data.config.users || state.users;
+        state.profiles = data.config.profiles || state.profiles;
+        state.accounts = data.config.accounts || state.accounts;
+        state.categoriesGasto = data.config.categoriesGasto || state.categoriesGasto;
+        state.categoriesIngreso = data.config.categoriesIngreso || state.categoriesIngreso;
+      }
+      saveState();
+    }
+
     updatePendingCount();
-    if (statusEl) statusEl.textContent = allTxs.length + ' transacciones enviadas';
-    showToast('Sincronizacion enviada ✓');
+    initMain();
+    const pendingCount = state.transactions.filter(t => !t.synced).length;
+    if (statusEl) statusEl.textContent = pendingCount === 0 ? 'Todo sincronizado ✓' : pendingCount + ' pendientes';
+    showToast('Sincronizacion completada ✓');
+
   } catch (e) {
     if (statusEl) statusEl.textContent = 'Error de conexion';
     showToast('Error de conexion');
