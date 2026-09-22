@@ -46,8 +46,19 @@ async function loadFromSheets(){
     showToast('Cargando datos desde Sheets...');
     const res = await fetch(state.sheetsURL);
     const data = await res.json();
-    if(data.ok && data.transactions.length > 0){
-      state.transactions = data.transactions;
+    if(data.ok){
+      if(data.transactions && data.transactions.length > 0)
+        state.transactions = data.transactions;
+      if(data.config){
+        state.users = data.config.users || state.users;
+        state.profiles = data.config.profiles || state.profiles;
+        state.accounts = data.config.accounts || state.accounts;
+        state.categoriesGasto = data.config.categoriesGasto || state.categoriesGasto;
+        state.categoriesIngreso = data.config.categoriesIngreso || state.categoriesIngreso;
+        state.exchangeRate = data.config.exchangeRate || state.exchangeRate;
+        state.budgets = data.config.budgets || {};
+        state.dailyLimit = data.config.dailyLimit || 0;
+      }
       saveState();
       initMain();
       showToast('Datos cargados desde Sheets ✓');
