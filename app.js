@@ -446,22 +446,13 @@ function txHTML(tx){
   </div>`;
 }
 
-function function deleteTx(id){
+function deleteTx(id){
   if(confirm('¿Eliminar esta transaccion?')){
     const index = state.transactions.findIndex(t=>t.id===id);
     if(index>=0) state.transactions[index]={...state.transactions[index], deleted:true, synced:false};
     saveState();
     if(navigator.onLine && state.sheetsURL) syncToSheets();
     else { initMain(); renderAllTransactions(); }
-    showToast('Transaccion eliminada');
-  }
-}(id){
-  if(confirm('¿Eliminar esta transaccion?')){
-    state.transactions=state.transactions.filter(t=>t.id!==id);
-    saveState();
-    if(navigator.onLine && state.sheetsURL) syncToSheets();
-    initMain();
-    renderAllTransactions();
     showToast('Transaccion eliminada');
   }
 }
