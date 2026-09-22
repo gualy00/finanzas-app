@@ -451,9 +451,10 @@ function deleteTx(id){
     const index = state.transactions.findIndex(t=>t.id===id);
     if(index>=0) state.transactions[index]={...state.transactions[index], deleted:true, synced:false};
     saveState();
-    if(navigator.onLine && state.sheetsURL) syncToSheets();
-    else { initMain(); renderAllTransactions(); }
+    initMain();
+    renderAllTransactions();
     showToast('Transaccion eliminada');
+    if(navigator.onLine && state.sheetsURL) syncToSheets();
   }
 }
 
@@ -611,8 +612,8 @@ function saveTransaction(){
 
   editingTxId=null;
   saveState();
-  if(navigator.onLine && state.sheetsURL) syncToSheets();
   showScreen('screen-main');
+  if(navigator.onLine && state.sheetsURL) syncToSheets();
 }
 
 function renderAllTransactions(){
@@ -1190,11 +1191,26 @@ function saveSheetURL() {
   updatePendingCount();
 }
 
-function updatePendingCount() {
-  const el = document.getElementById('pending-sync-count');
-  if (!el) return;
-  const pending = state.transactions.filter(t => !t.synced).length;
-  el.textContent = `${pending} transaccion${pending !== 1 ? 'es' : ''} pendiente${pending !== 1 ? 's' : ''}`;
+function updatePendingCount(){
+  const pending=state.transactions.filter(t=>!t.synced&&!t.deleted).length;
+  const el=document.getElementById('pending-sync-count');
+  if(el) el.textContent=`${pending} transaccion${pending!==1?'es':''} pendiente${pending!==1?'s':''}`;
+  const bar=document.getElementById('sync-bar');
+  const barText=document.getElementById('sync-bar-text');
+  if(bar&&barText){
+    if(pending>0){
+      bar.style.display='flex';
+      barText.textContent=`☁️ ${pending} pendiente${pending!==1?'s':''} de sincronizar`;
+      bar.style.background='rgba(251,191,36,0.15)';
+      bar.style.color='var(--warning)';
+    }else{
+      bar.style.display='flex';
+      barText.textContent='✅ Todo sincronizado';
+      bar.style.background='rgba(74,222,128,0.1)';
+      bar.style.color='var(--income)';
+      setTimeout(()=>{bar.style.display='none';},3000);
+    }
+  }
 }
 
 async function syncToSheets() {
