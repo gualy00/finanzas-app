@@ -632,7 +632,7 @@ function renderAllTransactions(){
 function filterTransactions(){
   const pv=document.getElementById('filter-profile').value;
   const tv=document.getElementById('filter-type').value;
-  let txs=state.transactions.slice().reverse();
+  let txs=state.transactions.filter(t=>!t.deleted).slice().reverse();
   if(pv!=='all')txs=txs.filter(t=>t.profile===pv);
   if(tv!=='all')txs=txs.filter(t=>t.type===tv);
   document.getElementById('all-transactions').innerHTML=txs.length?txs.map(txHTML).join(''):
